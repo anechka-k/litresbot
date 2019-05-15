@@ -18,6 +18,7 @@ import com.google.common.cache.CacheBuilder;
 
 import litresbot.HttpClientWithProxy;
 import litresbot.SendMessageList;
+import litresbot.util.Convert;
 import litresbot.util.Logger;
 
 @SuppressWarnings("unused")
@@ -164,16 +165,17 @@ public class FlibustaClient
               .filter(l -> l.rel != null && l.rel.contains("open-access"))
               .forEach(link ->
               {
-                String type = link.type.replace("application/", "");                
-                String id = Integer.toHexString(link.href.hashCode());
+                String type = link.type.replace("application/", "");
+                long hashCode = Integer.toUnsignedLong(link.href.hashCode());
+                String id = Long.toHexString(hashCode);
                 
                 // create a copy of the link with trimmed type
                 Link newLink = new Link(link.href, type, link.title, link.rel);
                 urlCache.put(id, newLink);
                 
                 result.appendPage(type);
-                result.appendPage(" : /d_");
-                result.appendPage(id);
+                result.appendPage(" : /download");
+                result.appendPage("" + hashCode);
                 result.appendPage("\n");
               }
             );
@@ -202,7 +204,10 @@ public class FlibustaClient
   
   public static String getUrlFromId(String id)
   {
-    Link link = urlCache.getIfPresent(id);  
+    long hashCode = Convert.parseLong(id);
+    String hashCodeHex = Long.toHexString(hashCode);
+    
+    Link link = urlCache.getIfPresent(hashCodeHex);  
     if(link == null) return null;
     
     return link.href;
@@ -210,7 +215,10 @@ public class FlibustaClient
    
   public static String getFilenameFromId(String id)
   {
-    Link link = urlCache.getIfPresent(id);
+    long hashCode = Convert.parseLong(id);
+    String hashCodeHex = Long.toHexString(hashCode);
+    
+    Link link = urlCache.getIfPresent(hashCodeHex);
     if(link == null) return null;
     
     String url = link.href;

@@ -1,7 +1,6 @@
 package litresbot;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 
 import org.telegram.telegrambots.bots.DefaultBotOptions;
@@ -18,9 +17,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import litresbot.flibusta.FlibustaClient;
 import litresbot.util.Logger;
 
-public class TelegramTestBot extends TelegramLongPollingBot
+public class TelegramBot extends TelegramLongPollingBot
 {
-  protected TelegramTestBot(DefaultBotOptions botOptions)
+  protected TelegramBot(DefaultBotOptions botOptions)
   {
     super(botOptions);
   }
@@ -142,43 +141,35 @@ public class TelegramTestBot extends TelegramLongPollingBot
     String languageCode = update.getMessage().getFrom().getLanguageCode();
     Logger.logInfoMessage("user has language: " + languageCode);
     
-    if (cmd.startsWith("/h"))
+    String normalCmd = cmd;
+    normalCmd = normalCmd.toLowerCase();
+    
+    if (normalCmd.startsWith("/help"))
     {
       sendBusy(update);
       sendReply(update, "Help message");
       return;
     }
     
-    if(cmd.startsWith("/f"))
+    if(normalCmd.startsWith("/book "))
     {
       sendBusy(update);
-      String argument = cmdArgument(cmd, "/f");
-      
-      SendDocument doc = new SendDocument();
-      doc.setDocument(new File(argument));
-      sendFile(update, doc);
-      return;
-    }
-    
-    if(cmd.startsWith("/b"))
-    {
-      sendBusy(update);
-      String argument = cmdArgument(cmd, "/b");
+      String argument = cmdArgument(cmd, "/book ");
       
       SendMessageList reply = FlibustaClient.getBooks(argument);      
       sendReply(update, reply);
       return;
     }
     
-    if(cmd.startsWith("/d"))
+    if(normalCmd.startsWith("/download"))
     {
       sendBusy(update);
-      String bookId = cmdArgument(cmd, "/d");
+      String bookId = cmdArgument(cmd, "/download");
       String bookUrlShort = FlibustaClient.getUrlFromId(bookId);
       
       if(bookUrlShort == null)
       {
-        sendReply(update, "/d: " + "Expired book ID");
+        sendReply(update, "Expired book ID");
         return;
       }
       
@@ -186,7 +177,7 @@ public class TelegramTestBot extends TelegramLongPollingBot
       
       if(fileName == null)
       {
-        sendReply(update, "/d: " + "Expired book ID");
+        sendReply(update, "Expired book ID");
         return;
       }
       
@@ -204,7 +195,7 @@ public class TelegramTestBot extends TelegramLongPollingBot
       
       if(book == null)
       {
-        sendReply(update, "/d: " + "Could not download file");
+        sendReply(update, "Could not download file");
         return;
       }
       
@@ -218,18 +209,8 @@ public class TelegramTestBot extends TelegramLongPollingBot
     }
   }
 
-  private String cmdArgument(String cmd, String selector)
-  {
-    if(cmd.startsWith("/d_"))
-    {
-      cmd = "/d " + cmd.substring(3);
-    }
-    
-    /*if(cmd.startsWith("/z_"))
-    {
-      cmd = "/z " + cmd.substring(3);
-    }*/
-    
-    return cmd.substring(selector.length() + 1).trim();
+  private String cmdArgument(String cmd, String prefix)
+  {    
+    return cmd.substring(prefix.length()).trim();
   }
 }

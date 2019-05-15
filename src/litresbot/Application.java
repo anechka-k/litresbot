@@ -50,7 +50,7 @@ public class Application
     
     try
     {
-      telegram.registerBot(new TelegramTestBot(botOptions));
+      telegram.registerBot(new TelegramBot(botOptions));
       Logger.logInfoMessage("Bot registered OK");
     }
     catch (Exception e)

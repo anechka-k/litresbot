@@ -147,7 +147,14 @@ public class TelegramBot extends TelegramLongPollingBot
     if (normalCmd.startsWith("/help"))
     {
       sendBusy(update);
-      sendReply(update, "Help message");
+      sendReply(update, helpScreen());
+      return;
+    }
+    
+    if (normalCmd.startsWith("/start"))
+    {
+      sendBusy(update);
+      sendReply(update, welcomeScreen());
       return;
     }
     
@@ -212,5 +219,19 @@ public class TelegramBot extends TelegramLongPollingBot
   private String cmdArgument(String cmd, String prefix)
   {    
     return cmd.substring(prefix.length()).trim();
+  }
+  
+  private String welcomeScreen()
+  {
+    return "¬ведите \"/book Ќазвание книги\" дл€ поиска.";
+  }
+  
+  private String helpScreen()
+  {
+    return 
+      "—писок доступных команд:\n" +
+      "/start - начало работы с ботом.\n" +
+      "/help - справка по работе с ботом.\n" +
+      "/book - поиск по названию книги.";
   }
 }

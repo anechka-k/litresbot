@@ -22,7 +22,7 @@
  *  SOFTWARE.
  */
 
-package litresbot.flibusta;
+package litresbot.opds;
 
 /**
  * Created by flicus on 14.05.16.

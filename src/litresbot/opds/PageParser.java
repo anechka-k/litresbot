@@ -22,7 +22,7 @@
  *  SOFTWARE.
  */
 
-package litresbot.flibusta;
+package litresbot.opds;
 
 import org.jdom2.Document;
 import org.jdom2.Element;

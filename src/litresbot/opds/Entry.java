@@ -1,7 +1,8 @@
 /*
  *  The MIT License (MIT)
  *
- *  Copyright (c) 2016 schors
+ *  Copyright (c) 2016  schors
+ *
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
@@ -21,26 +22,41 @@
  *  SOFTWARE.
  */
 
-package litresbot.flibusta;
+package litresbot.opds;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Page
+/**
+ * Created by flicus on 14.05.16.
+ */
+public class Entry
 {
-  public String title = null;
+  public String updated;
+  public String id;
+  public String title;
+  public String author;
   public List<Link> links = new ArrayList<>();
-  public List<Entry> entries = new ArrayList<>();
 
-  public Page() { }
+  public Entry(String updated, String id, String title, String author)
+  {
+    this.updated = updated;
+    this.id = id;
+    this.title = title;
+    this.author = author;
+  }
+
+  public Entry() { }
 
   @Override
   public String toString()
   {
-    return "Page{" +
-      "title='" + title + '\'' +
+    return "Entry{" +
+      "updated='" + updated + '\'' +
+      ", id='" + id + '\'' +
+      ", title='" + title + '\'' +
+      ", author='" + author + '\'' +
       ", links=" + links +
-      ", entries=" + entries +
       '}';
   }
 }

@@ -21,7 +21,7 @@
  *  SOFTWARE.
  */
 
-package litresbot.flibusta;
+package litresbot.opds;
 
 import java.util.ArrayList;
 import java.util.List;

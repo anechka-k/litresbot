@@ -18,6 +18,11 @@ import com.google.common.cache.CacheBuilder;
 
 import litresbot.HttpClientWithProxy;
 import litresbot.SendMessageList;
+import litresbot.opds.Crawler;
+import litresbot.opds.FileNameParser;
+import litresbot.opds.Link;
+import litresbot.opds.Page;
+import litresbot.opds.PageParser;
 import litresbot.util.Convert;
 import litresbot.util.Logger;
 
@@ -37,81 +42,6 @@ public class FlibustaClient
     urlCache = CacheBuilder.newBuilder().maximumSize(URL_CACHE_SIZE).build();
   }
   
-  public static Page downloadPage(String url) throws IOException
-  {
-    String encodedSearch = URLEncoder.encode(url, "UTF-8");
-    String reply = HttpClientWithProxy.doRequest(rootOPDSDefault + "/opds" + String.format(bookSearch, encodedSearch));
-      
-    InputStream inputStream = new ByteArrayInputStream(reply.getBytes(Charset.forName("UTF-8")));
-      
-    Page page = PageParser.parse(inputStream);
-    Logger.logInfoMessage("Page: " + page);
-    
-    return page;
-  }
-  
-  public static Page downloadPageDirect(String url) throws IOException
-  {
-    String reply = HttpClientWithProxy.doRequest(rootOPDSDefault + url);
-      
-    InputStream inputStream = new ByteArrayInputStream(reply.getBytes(Charset.forName("UTF-8")));
-      
-    Page page = PageParser.parse(inputStream);
-    Logger.logInfoMessage("Page: " + page);
-    
-    return page;
-  }
-  
-  public static List<Page> downloadPages(String url) throws IOException
-  {
-    List<Page> pages = new ArrayList<Page>();
-    Set<String> currentUrls = new HashSet<String>();
-    Set<String> processedUrls = new HashSet<String>();
-    
-    Page page = downloadPage(url);
-    pages.add(page);
-    
-    page.links.stream()
-      .filter((l) -> l.rel.equals("next"))
-      .forEach(lnk ->
-      {
-        currentUrls.add(lnk.href);
-      }
-    );
-    
-    while(true)
-    {
-      boolean found = false;
-      Set<String> nextUrls = new HashSet<String>();
-      
-      for(String entry : currentUrls)
-      {
-        if(processedUrls.contains(entry)) continue;
-
-        found = true;
-        
-        Page nextPage = downloadPageDirect(entry);
-        pages.add(nextPage);
-        processedUrls.add(entry);
-          
-        nextPage.links.stream()
-          .filter((l) -> l.rel.equals("next"))
-          .forEach(lnk ->
-          {
-            nextUrls.add(lnk.href);
-          }
-        );
-      }
-    
-      currentUrls.clear();
-      currentUrls.addAll(nextUrls);
-      
-      if(!found) break;
-    }
-    
-    return pages;
-  }
-  
   public static SendMessageList getBooks(String searchQuery)
   {
     SendMessageList result = new SendMessageList(4096);
@@ -119,7 +49,8 @@ public class FlibustaClient
     
     try
     {
-      List<Page> pages = downloadPages(searchQuery);
+      String encodedSearch = URLEncoder.encode(searchQuery, "UTF-8");      
+      List<Page> pages = Crawler.downloadPages(rootOPDSDefault, String.format(bookSearch, encodedSearch));
       
       for(Page page : pages)
       {
@@ -146,20 +77,6 @@ public class FlibustaClient
               result.appendPage(")");
             }
             result.appendPage("\n");
-            
-            entry.links.stream()
-              .filter((l) -> l.type != null && l.type.toLowerCase().contains("opds-catalog"))
-              .forEach(link ->
-              {
-                /*if (link.title != null)
-                {
-                  result.appendPage(link.title);
-                }*/
-                
-                String id = Integer.toHexString(link.href.hashCode());
-                Logger.logInfoMessage("OPDS catalog found: " + id);
-              }
-            );
               
             entry.links.stream()
               .filter(l -> l.rel != null && l.rel.contains("open-access"))
@@ -181,10 +98,9 @@ public class FlibustaClient
             );
               
             result.appendPage("\n");
+            result.endPage();
           });
         }
-        
-        result.endPage();
       }
     }
     catch (IOException e)

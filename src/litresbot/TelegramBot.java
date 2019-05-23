@@ -133,7 +133,6 @@ public class TelegramBot extends TelegramLongPollingBot
     if (!update.getMessage().hasText()) return;
     
     String cmd = update.getMessage().getText();
-    if (!cmd.startsWith("/")) return;
     
     String userName = update.getMessage().getFrom().getUserName();
     Logger.logInfoMessage("onUpdate: " + cmd + ", " + userName);
@@ -144,10 +143,10 @@ public class TelegramBot extends TelegramLongPollingBot
     String normalCmd = cmd;
     normalCmd = normalCmd.toLowerCase();
     
-    if (normalCmd.startsWith("/help"))
+    // default is search the book
+    if (!cmd.startsWith("/"))
     {
-      sendBusy(update);
-      sendReply(update, helpScreen());
+      bookSearch(update, cmd);
       return;
     }
     
@@ -158,13 +157,17 @@ public class TelegramBot extends TelegramLongPollingBot
       return;
     }
     
-    if(normalCmd.startsWith("/book "))
+    if (normalCmd.startsWith("/help"))
     {
       sendBusy(update);
+      sendReply(update, helpScreen());
+      return;
+    }
+    
+    if(normalCmd.startsWith("/book "))
+    {
       String argument = cmdArgument(cmd, "/book ");
-      
-      SendMessageList reply = FlibustaClient.getBooks(argument);      
-      sendReply(update, reply);
+      bookSearch(update, argument);
       return;
     }
     
@@ -216,6 +219,13 @@ public class TelegramBot extends TelegramLongPollingBot
     }
   }
 
+  private void bookSearch(Update update, String searchQuery)
+  {
+    sendBusy(update);    
+    SendMessageList reply = FlibustaClient.getBooks(searchQuery);      
+    sendReply(update, reply);
+  }
+
   private String cmdArgument(String cmd, String prefix)
   {    
     return cmd.substring(prefix.length()).trim();
@@ -223,7 +233,7 @@ public class TelegramBot extends TelegramLongPollingBot
   
   private String welcomeScreen()
   {
-    return "Введите \"/book Название книги\" для поиска.";
+    return "Введите название книги для поиска.";
   }
   
   private String helpScreen()

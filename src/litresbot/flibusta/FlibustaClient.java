@@ -19,6 +19,7 @@ import com.google.common.cache.CacheBuilder;
 import litresbot.HttpClientWithProxy;
 import litresbot.SendMessageList;
 import litresbot.opds.Crawler;
+import litresbot.opds.Entry;
 import litresbot.opds.FileNameParser;
 import litresbot.opds.Link;
 import litresbot.opds.Page;
@@ -49,58 +50,48 @@ public class FlibustaClient
     
     try
     {
-      String encodedSearch = URLEncoder.encode(searchQuery, "UTF-8");      
-      List<Page> pages = Crawler.downloadPages(rootOPDSDefault, String.format(bookSearch, encodedSearch));
+      String encodedSearch = URLEncoder.encode(searchQuery, "UTF-8");
+      List<Entry> entries = new ArrayList<Entry>();
       
-      for(Page page : pages)
+      List<Entry> bookEntries = Crawler.downloadBooks(rootOPDSDefault, String.format(bookSearch, encodedSearch), entries);
+      List<Entry> authorEntries = Crawler.downloadBooks(rootOPDSDefault, String.format(authorSearch, encodedSearch), bookEntries);
+      bookEntries.addAll(authorEntries);
+      
+      for(Entry entry : bookEntries)
       {
-        if (page.entries != null && page.entries.size() > 0)
-        {
-          found = true;
-          
-          if (page.title != null)
-          {
-            result.appendPage("<b>");
-            result.appendPage(page.title);
-            result.appendPage("</b>\n");
-          }
-          page.entries.stream().forEach(entry ->
-          {
-            result.appendPage("<b>");
-            result.appendPage(entry.title);
-            result.appendPage("</b>\n");
+        found = true;
+
+        result.appendPage("<b>");
+        result.appendPage(entry.title);
+        result.appendPage("</b>\n");
             
-            if (entry.author != null)
-            {
-              result.appendPage(" (");
-              result.appendPage(entry.author);
-              result.appendPage(")");
-            }
-            result.appendPage("\n");
-              
-            entry.links.stream()
-              .filter(l -> l.rel != null && l.rel.contains("open-access"))
-              .forEach(link ->
-              {
-                String type = link.type.replace("application/", "");
-                long hashCode = Integer.toUnsignedLong(link.href.hashCode());
-                String id = Long.toHexString(hashCode);
-                
-                // create a copy of the link with trimmed type
-                Link newLink = new Link(link.href, type, link.title, link.rel);
-                urlCache.put(id, newLink);
-                
-                result.appendPage(type);
-                result.appendPage(" : /download");
-                result.appendPage("" + hashCode);
-                result.appendPage("\n");
-              }
-            );
-              
-            result.appendPage("\n");
-            result.endPage();
-          });
+        if (entry.author != null)
+        {
+          result.appendPage(" (");
+          result.appendPage(entry.author);
+          result.appendPage(")");
         }
+            
+        result.appendPage("\n");
+        
+        for(Link link : entry.links)
+        {
+          String type = link.type.replace("application/", "");
+          long hashCode = Integer.toUnsignedLong(link.href.hashCode());
+          String id = Long.toHexString(hashCode);
+                
+          // create a copy of the link with trimmed type
+          Link newLink = new Link(link.href, type, link.title, link.rel);
+          urlCache.put(id, newLink);
+                
+          result.appendPage(type);
+          result.appendPage(" : /download");
+          result.appendPage("" + hashCode);
+          result.appendPage("\n");
+        }
+              
+        result.appendPage("\n");
+        result.endPage();
       }
     }
     catch (IOException e)

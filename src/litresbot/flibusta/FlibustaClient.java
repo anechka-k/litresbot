@@ -17,6 +17,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import litresbot.HttpClientWithProxy;
+import litresbot.PluralsText;
 import litresbot.SendMessageList;
 import litresbot.opds.Crawler;
 import litresbot.opds.Entry;
@@ -26,6 +27,8 @@ import litresbot.opds.Page;
 import litresbot.opds.PageParser;
 import litresbot.util.Convert;
 import litresbot.util.Logger;
+import litresbot.util.Plurals;
+import litresbot.util.Plurals.PluralForm;
 
 @SuppressWarnings("unused")
 public class FlibustaClient
@@ -46,7 +49,6 @@ public class FlibustaClient
   public static SendMessageList getBooks(String searchQuery)
   {
     SendMessageList result = new SendMessageList(4096);
-    boolean found = false;
     
     try
     {
@@ -57,10 +59,21 @@ public class FlibustaClient
       List<Entry> authorEntries = Crawler.downloadBooks(rootOPDSDefault, String.format(authorSearch, encodedSearch), bookEntries);
       bookEntries.addAll(authorEntries);
       
+      Long booksCount = (long) bookEntries.size();
+      
+      if(booksCount == 0)
+      {
+        result.appendPage("К сожалению ничего не найдено");
+        result.endPage();
+        return result;
+      }
+      
+      String booksText = PluralsText.convert("книга", booksCount);
+      result.appendPage("Найдено: " + bookEntries.size() + " " + booksText + "\n\n");
+      result.endPage();
+      
       for(Entry entry : bookEntries)
       {
-        found = true;
-
         result.appendPage("<b>");
         result.appendPage(entry.title);
         result.appendPage("</b>\n");
@@ -97,13 +110,6 @@ public class FlibustaClient
     catch (IOException e)
     {
       Logger.logMessage("Http request failed: ", e);
-    }
-    
-    if(!found)
-    {
-      result.appendPage("Nothing found");
-      result.endPage();
-      return result;
     }
     
     return result;

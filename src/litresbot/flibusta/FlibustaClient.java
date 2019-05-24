@@ -1,6 +1,14 @@
 package litresbot.flibusta;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
@@ -17,8 +25,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import litresbot.HttpClientWithProxy;
-import litresbot.PluralsText;
 import litresbot.SendMessageList;
+import litresbot.books.BookDownloader;
+import litresbot.books.PluralsText;
 import litresbot.opds.Crawler;
 import litresbot.opds.Entry;
 import litresbot.opds.FileNameParser;
@@ -44,6 +53,11 @@ public class FlibustaClient
   static
   {
     urlCache = CacheBuilder.newBuilder().maximumSize(URL_CACHE_SIZE).build();
+  }
+  
+  static
+  {
+    BookDownloader.folder = "./books";
   }
   
   public static SendMessageList getBooks(String searchQuery)
@@ -146,20 +160,26 @@ public class FlibustaClient
     
     return filename;
   }
-  
-  public static byte[] download(String url, String fileName) throws IOException
+
+  public static byte[] downloadWithCache(String bookId) throws IOException
   {
-    byte[] book = BooksCache.getBookFromId(url);
-    if(book != null)
+    String bookUrlShort = getUrlFromId(bookId);
+    
+    if(bookUrlShort == null)
     {
-      Logger.logInfoMessage("book " + url + " found in cache");
-      return book;
+      return null;
     }
     
-    String bookUrl = rootOPDSDefault + url;
-    InputStream bookData = HttpClientWithProxy.download(bookUrl, fileName);
-    book = IOUtils.toByteArray(bookData);
-    BooksCache.addBook(url, book);
+    String fileName = getFilenameFromId(bookId);
+    
+    if(fileName == null)
+    {
+      return null;
+    }
+    
+    Logger.logInfoMessage("Downloading book: " + bookUrlShort);
+    byte[] book = BookDownloader.downloadWithCache(rootOPDSDefault, bookUrlShort, fileName);
+    Logger.logInfoMessage("Downloading book done: " + bookUrlShort);
     
     return book;
   }

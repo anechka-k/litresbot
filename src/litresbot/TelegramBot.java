@@ -175,28 +175,11 @@ public class TelegramBot extends TelegramLongPollingBot
     {
       sendBusy(update);
       String bookId = cmdArgument(cmd, "/download");
-      String bookUrlShort = FlibustaClient.getUrlFromId(bookId);
-      
-      if(bookUrlShort == null)
-      {
-        sendReply(update, "Expired book ID");
-        return;
-      }
-      
-      String fileName = FlibustaClient.getFilenameFromId(bookId);
-      
-      if(fileName == null)
-      {
-        sendReply(update, "Expired book ID");
-        return;
-      }
       
       byte[] book = null;
       try
       {
-        Logger.logInfoMessage("Downloading book: " + bookUrlShort);
-        book = FlibustaClient.download(bookUrlShort, fileName);
-        Logger.logInfoMessage("Downloading book done: " + bookUrlShort);
+        book = FlibustaClient.downloadWithCache(bookId);
       }
       catch (IOException e)
       {
@@ -205,11 +188,19 @@ public class TelegramBot extends TelegramLongPollingBot
       
       if(book == null)
       {
-        sendReply(update, "Could not download file");
+        sendReply(update, "Не удалось скачать файл");
         return;
       }
       
       ByteArrayInputStream fileStream = new ByteArrayInputStream(book);
+      
+      String fileName = FlibustaClient.getFilenameFromId(bookId);
+      
+      if(fileName == null)
+      {
+        sendReply(update, "Неверный номер книги");
+        return;
+      }
       
       InputFile fileMedia = new InputFile(fileStream, fileName);
       SendDocument doc = new SendDocument();

@@ -4,15 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 public class SendMessageList
 {
   private int max = 2048;
   
-  private String currentPage = "";
-  private String nextPage = "";
+  private String scratchpadPage = "";
+  private String currentTextChunk = "";
   
   private List<String> pages = new ArrayList<String>();
+  private List<SendMessage> messages = new ArrayList<SendMessage>();
 
   public SendMessageList() {}
 
@@ -21,47 +24,78 @@ public class SendMessageList
     this.max = max;
   }
   
-  public void endPage()
+  public void endTextPage()
   {
-    if((currentPage.length() + nextPage.length()) <= max)
+    if((currentTextChunk.length() + scratchpadPage.length()) > max)
     {
-      nextPage += currentPage;
-      currentPage = "";
+      pages.add(scratchpadPage);
+      scratchpadPage = currentTextChunk;
+      currentTextChunk = "";
       return;
     }
     
-    pages.add(nextPage);
-    nextPage = currentPage;
-    currentPage = "";
+    scratchpadPage += currentTextChunk;
+    currentTextChunk = "";
   }
 
-  public void appendPage(String msg)
+  public void appendTextPage(String msg)
   {
-    currentPage += msg;
+    currentTextChunk += msg;
+  }
+  
+  // appends buttons to the last message in list
+  public void appendButtons(List<List<InlineKeyboardButton>> buttons)
+  {
+    prepareMessages();
+    
+    if(messages.size() == 0)
+    {
+      ///HACK: do not add buttons if no messages in list
+      return;
+    }
+    
+    SendMessage lastMessage = messages.get(messages.size() - 1);
+    messages.remove(messages.size() - 1);
+    
+    InlineKeyboardMarkup kb = new InlineKeyboardMarkup();
+    kb.setKeyboard(buttons);
+    SendMessage sendMessage = new SendMessage();
+    sendMessage.setText(lastMessage.getText());
+    sendMessage.setReplyMarkup(kb);
+    sendMessage.enableHtml(true);
+    messages.add(sendMessage);
   }
 
   public List<SendMessage> getMessages()
   {
-    if(currentPage.length() > 0)
+    prepareMessages();
+    return messages;
+  }
+  
+  private void prepareMessages()
+  {
+    // flush current text to page
+    if(currentTextChunk.length() > 0)
     {
-      endPage();
+      endTextPage();
     }
     
-    if(nextPage.length() > 0)
+    // and flush current page to pages list
+    if(scratchpadPage.length() > 0)
     {
-      pages.add(nextPage);
-      nextPage = "";
+      pages.add(scratchpadPage);
+      scratchpadPage = "";
     }
     
-    List<SendMessage> res = new ArrayList<>();
+    // and flush pages list to message list
     for (String page : pages)
     {
       SendMessage sendMessage = new SendMessage();
       sendMessage.setText(page.toString());
       sendMessage.enableHtml(true);
-      res.add(sendMessage);
+      messages.add(sendMessage);
     }
     
-    return res;
+    pages.clear();
   }
 }

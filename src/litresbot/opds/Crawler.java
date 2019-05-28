@@ -47,7 +47,10 @@ public class Crawler
         
         if(currentLinks.isEmpty()) continue;
         
-        Entry newEntry = new Entry(entry.updated, entry.id, entry.title, entry.author);
+        String entryId = entry.id;
+        entryId = entryId.replace("tag:book:", "");
+        
+        Entry newEntry = new Entry(entry.updated, entryId, entry.title, entry.author);
         newEntry.links = currentLinks;
         entries.add(newEntry);
       }

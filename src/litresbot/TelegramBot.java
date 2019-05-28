@@ -24,10 +24,30 @@ public class TelegramBot extends TelegramLongPollingBot
     super(botOptions);
   }
   
+  private Message getChatMessage(Update update)
+  {
+    Message chatMessage = update.getMessage();
+    
+    if(update.hasCallbackQuery())
+    {
+      chatMessage = update.getCallbackQuery().getMessage();
+    }
+    
+    return chatMessage;
+  }
+  
   private void sendReply(Update update, String res)
   {
+    Message chatMessage = getChatMessage(update);
+        
+    if(chatMessage == null)
+    {
+      Logger.logMessage("Could not sendReply");
+      return;
+    }
+    
     SendMessage message = new SendMessage()
-            .setChatId(String.valueOf(update.getMessage().getChatId()))
+            .setChatId(String.valueOf(chatMessage.getChatId()))
             .setText(res)
             .enableHtml(true);
     try
@@ -43,7 +63,15 @@ public class TelegramBot extends TelegramLongPollingBot
   @SuppressWarnings("unused")
   private void sendReply(Update update, SendMessage res)
   {
-    res.setChatId(String.valueOf(update.getMessage().getChatId()));
+    Message chatMessage = getChatMessage(update);
+    
+    if(chatMessage == null)
+    {
+      Logger.logMessage("Could not sendReply");
+      return;
+    }
+    
+    res.setChatId(String.valueOf(chatMessage.getChatId()));
     try
     {
       execute(res);
@@ -57,11 +85,19 @@ public class TelegramBot extends TelegramLongPollingBot
   private Message sendReply(Update update, SendMessageList res)
   {
     Message result = null;
+    Message chatMessage = getChatMessage(update);
+    
+    if(chatMessage == null)
+    {
+      Logger.logMessage("Could not sendReply");
+      return result;
+    }
+    
     for (SendMessage sm : res.getMessages())
     {
       if (sm.getText() != null && sm.getText().length() > 0)
       {
-        sm.setChatId(String.valueOf(update.getMessage().getChatId()));
+        sm.setChatId(String.valueOf(chatMessage.getChatId()));
         try
         {
           result = execute(sm);
@@ -78,7 +114,15 @@ public class TelegramBot extends TelegramLongPollingBot
   private Message sendFile(Update update, SendDocument res)
   {
     Message result = null;
-    res.setChatId(update.getMessage().getChatId().toString());
+    Message chatMessage = getChatMessage(update);
+    
+    if(chatMessage == null)
+    {
+      Logger.logMessage("Could not sendReply");
+      return result;
+    }
+    
+    res.setChatId(chatMessage.getChatId().toString());
     
     TelegramApiException sendException = null;
     try
@@ -101,8 +145,16 @@ public class TelegramBot extends TelegramLongPollingBot
 
   private void sendBusy(Update update)
   {
+    Message chatMessage = getChatMessage(update);
+    
+    if(chatMessage == null)
+    {
+      Logger.logMessage("Could not sendReply");
+      return;
+    }
+    
     SendChatAction sca = new SendChatAction();
-    sca.setChatId(update.getMessage().getChatId().toString());
+    sca.setChatId(chatMessage.getChatId().toString());
     sca.setAction(ActionType.UPLOADDOCUMENT);
     try
     {
@@ -129,6 +181,12 @@ public class TelegramBot extends TelegramLongPollingBot
   @Override
   public void onUpdateReceived(Update update)
   {
+    if(update.hasCallbackQuery())
+    {
+      onCallbackQueryReceived(update);
+      return;
+    }
+    
     if (!update.hasMessage()) return;
     if (!update.getMessage().hasText()) return;
     
@@ -171,6 +229,33 @@ public class TelegramBot extends TelegramLongPollingBot
       return;
     }
     
+    if(normalCmd.startsWith("/bookinfo"))
+    {
+      String argument = cmdArgument(cmd, "/bookinfo");
+      sendBusy(update);    
+      SendMessageList reply = FlibustaClient.getBookInfo(argument);      
+      sendReply(update, reply);
+      return;
+    }
+    
+    if(normalCmd.startsWith("/format"))
+    {
+      String argument = cmdArgument(cmd, "/format");
+      sendBusy(update);    
+      SendMessageList reply = FlibustaClient.chooseBookFormat(argument);      
+      sendReply(update, reply);
+      return;
+    }
+    
+    if(normalCmd.startsWith("/read"))
+    {
+      String argument = cmdArgument(cmd, "/read");
+      sendBusy(update);    
+      SendMessageList reply = FlibustaClient.readBook(argument);      
+      sendReply(update, reply);
+      return;
+    }
+    
     if(normalCmd.startsWith("/download"))
     {
       sendBusy(update);
@@ -208,6 +293,83 @@ public class TelegramBot extends TelegramLongPollingBot
       sendFile(update, doc);
       return;
     }
+  }
+
+  private void onCallbackQueryReceived(Update update)
+  {    
+    String cmd = update.getCallbackQuery().getData();
+    
+    String userName = update.getCallbackQuery().getFrom().getUserName();
+    Logger.logInfoMessage("onCallback: " + cmd + ", " + userName);
+    
+    String languageCode = update.getCallbackQuery().getFrom().getLanguageCode();
+    Logger.logInfoMessage("user has language: " + languageCode);
+    
+    String normalCmd = cmd;
+    normalCmd = normalCmd.toLowerCase();
+    
+    if(!cmd.startsWith("/"))
+    {
+      sendReply(update, "Неверная команда");
+      return;
+    }
+    
+    if(normalCmd.startsWith("/read"))
+    {
+      String argument = cmdArgument(cmd, "/read");
+      sendBusy(update);    
+      SendMessageList reply = FlibustaClient.readBook(argument);      
+      sendReply(update, reply);
+      return;
+    }
+    
+    if(normalCmd.startsWith("/format"))
+    {
+      String argument = cmdArgument(cmd, "/format");
+      sendBusy(update);    
+      SendMessageList reply = FlibustaClient.chooseBookFormat(argument);      
+      sendReply(update, reply);
+      return;
+    }
+    
+    if(normalCmd.startsWith("/download"))
+    {
+      sendBusy(update);
+      String bookId = cmdArgument(cmd, "/download");
+      
+      byte[] book = null;
+      try
+      {
+        book = FlibustaClient.downloadWithCache(bookId);
+      }
+      catch (IOException e)
+      {
+        Logger.logMessage("Could not download", e);
+      }
+      
+      if(book == null)
+      {
+        sendReply(update, "Не удалось скачать файл");
+        return;
+      }
+      
+      ByteArrayInputStream fileStream = new ByteArrayInputStream(book);
+      
+      String fileName = FlibustaClient.getFilenameFromId(bookId);
+      
+      if(fileName == null)
+      {
+        sendReply(update, "Неверный номер книги");
+        return;
+      }
+      
+      InputFile fileMedia = new InputFile(fileStream, fileName);
+      SendDocument doc = new SendDocument();
+      doc.setDocument(fileMedia);
+      sendFile(update, doc);
+      return;
+    }
+    
   }
 
   private void bookSearch(Update update, String searchQuery)

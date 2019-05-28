@@ -75,6 +75,11 @@ public class PageParser
           {
             entry.author = author.getChild("name", element.getNamespace()).getText();
           }
+          Element id = element.getChild("id", element.getNamespace());
+          if (id != null)
+          {
+            entry.id = id.getText();
+          }
           List<Element> _links = element.getChildren("link", element.getNamespace());
           _links.stream().forEach(link ->
           {

@@ -60,7 +60,7 @@ public class FlibustaClient
   
   static
   {
-    BookDownloader.folder = "./books";
+    BookDownloader.folder = "./flibooks";
   }
   
   private static HashMap<String, Entry> booksCache;
@@ -111,23 +111,6 @@ public class FlibustaClient
         result.appendTextPage("Скачать: ");
         result.appendTextPage("/bookinfo");
         result.appendTextPage(entry.id);
-        
-        
-        /*for(Link link : entry.links)
-        {
-          String type = link.type.replace("application/", "");
-          long hashCode = Integer.toUnsignedLong(link.href.hashCode());
-          String id = Long.toHexString(hashCode);
-                
-          // create a copy of the link with trimmed type
-          Link newLink = new Link(link.href, type, link.title, link.rel);
-          urlCache.put(id, newLink);
-                
-          result.appendPage(type);
-          result.appendPage(" : /download");
-          result.appendPage("" + hashCode);
-          result.appendPage("\n");
-        }*/
               
         result.appendTextPage("\n\n");
         result.endTextPage();
@@ -301,29 +284,4 @@ public class FlibustaClient
     
     return book;
   }
-
-  /*public static SendMessageList testScreen()
-  {
-    SendMessageList result = new SendMessageList(4096);
-    
-    result.appendTextPage("Test result");
-    result.endTextPage();
-  
-    List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
-    InlineKeyboardButton btn1 = new InlineKeyboardButton();
-    InlineKeyboardButton btn2 = new InlineKeyboardButton();
-    btn1.setText("Скачать");
-    btn1.setCallbackData("/download");
-    btn2.setText("Читать");
-    btn2.setCallbackData("/read");
-    
-    buttonsRow.add(btn1);
-    buttonsRow.add(btn2);
-    
-    List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
-    buttons.add(buttonsRow);
-    result.appendButtons(buttons);
-  
-    return result;
-  }*/
 }

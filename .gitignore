@@ -53,4 +53,4 @@ lib/
 litresbot.properties
 *.log
 *.lck
-/books/
+/flibooks/

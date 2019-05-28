@@ -30,6 +30,8 @@ import com.google.common.cache.CacheBuilder;
 import litresbot.HttpClientWithProxy;
 import litresbot.SendMessageList;
 import litresbot.books.BookDownloader;
+import litresbot.books.BookFileId;
+import litresbot.books.BookInfoId;
 import litresbot.books.PluralsText;
 import litresbot.opds.Crawler;
 import litresbot.opds.Entry;
@@ -126,11 +128,11 @@ public class FlibustaClient
     return result;
   }
   
-  public static SendMessageList getBookInfo(String bookId)
+  public static SendMessageList getBookInfo(BookInfoId bookId)
   {
     SendMessageList result = new SendMessageList(4096);
     
-    Entry bookInfo = booksCache.get(bookId);
+    Entry bookInfo = booksCache.get(bookId.id);
     if(bookInfo == null)
     {
       result.appendTextPage("К сожалению ничего не найдено");
@@ -169,11 +171,11 @@ public class FlibustaClient
     return result;
   }
   
-  public static SendMessageList chooseBookFormat(String bookId)
+  public static SendMessageList chooseBookFormat(BookInfoId bookId)
   {
     SendMessageList result = new SendMessageList(4096);
     
-    Entry bookInfo = booksCache.get(bookId);
+    Entry bookInfo = booksCache.get(bookId.id);
     if(bookInfo == null)
     {
       result.appendTextPage("К сожалению ничего не найдено");
@@ -230,9 +232,9 @@ public class FlibustaClient
     return result;
   }
   
-  public static String getUrlFromId(String id)
+  public static String getUrlFromBookFileId(BookFileId id)
   {
-    long hashCode = Convert.parseLong(id);
+    long hashCode = Convert.parseLong(id.id);
     String hashCodeHex = Long.toHexString(hashCode);
     
     Link link = urlCache.getIfPresent(hashCodeHex);  
@@ -241,9 +243,9 @@ public class FlibustaClient
     return link.href;
   }
    
-  public static String getFilenameFromId(String id)
+  public static String getFilenameFromBookFileId(BookFileId id)
   {
-    long hashCode = Convert.parseLong(id);
+    long hashCode = Convert.parseLong(id.id);
     String hashCodeHex = Long.toHexString(hashCode);
     
     Link link = urlCache.getIfPresent(hashCodeHex);
@@ -262,16 +264,16 @@ public class FlibustaClient
     return filename;
   }
 
-  public static byte[] downloadWithCache(String bookId) throws IOException
+  public static byte[] downloadWithCache(BookFileId bookFileId) throws IOException
   {
-    String bookUrlShort = getUrlFromId(bookId);
+    String bookUrlShort = getUrlFromBookFileId(bookFileId);
     
     if(bookUrlShort == null)
     {
       return null;
     }
     
-    String fileName = getFilenameFromId(bookId);
+    String fileName = getFilenameFromBookFileId(bookFileId);
     
     if(fileName == null)
     {

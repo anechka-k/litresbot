@@ -77,7 +77,7 @@ public class BookDownloader
   
   public static byte[] downloadWithCache(String root, String bookUrl, String fileName) throws IOException
   {
-    byte[] book = BookCache.getBookFromId(bookUrl);
+    byte[] book = BookContentCache.getBookFromId(bookUrl);
     if(book != null)
     {
       Logger.logInfoMessage("book " + bookUrl + " found in cache");
@@ -86,7 +86,7 @@ public class BookDownloader
     
     book = download(root, bookUrl, fileName);
     
-    BookCache.addBook(bookUrl, book);
+    BookContentCache.addBook(bookUrl, book);
     return book;
   }
 }

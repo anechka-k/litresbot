@@ -80,9 +80,14 @@ public class FlibustaClient
       String encodedSearch = URLEncoder.encode(searchQuery, "UTF-8");
       List<Entry> entries = new ArrayList<Entry>();
       
-      List<Entry> bookEntries = Crawler.downloadBooks(rootOPDSDefault, String.format(bookSearch, encodedSearch), entries);
-      List<Entry> authorEntries = Crawler.downloadBooks(rootOPDSDefault, String.format(authorSearch, encodedSearch), bookEntries);
-      bookEntries.addAll(authorEntries);
+      List<Page> bookPages = FlibustaCrawler.downloadBooksSearch(rootOPDSDefault, String.format(bookSearch, encodedSearch));
+      List<Page> authorPages = FlibustaCrawler.downloadAuthorsSearch(rootOPDSDefault, String.format(authorSearch, encodedSearch));
+      
+      List<Page> allPages = new ArrayList<Page>();
+      allPages.addAll(bookPages);
+      allPages.addAll(authorPages);
+      
+      List<Entry> bookEntries = FlibustaCrawler.processBooks(allPages);
       
       Long booksCount = (long) bookEntries.size();
       

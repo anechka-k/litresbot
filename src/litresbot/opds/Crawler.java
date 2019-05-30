@@ -12,53 +12,7 @@ import java.util.Set;
 import litresbot.HttpClientWithProxy;
 
 public class Crawler
-{
-  public static List<Entry> downloadBooks(String root, String search, List<Entry> downloaded) throws IOException
-  {
-    List<Page> pages = downloadPages(root, search);
-    List<Entry> entries = new ArrayList<Entry>();
-    
-    // prepare a check list to avoid duplicates
-    Set<String> processedLinks = new HashSet<String>();
-    for(Entry entry : downloaded)
-    {
-      for(Link link : entry.links)
-      {
-        if(link.type.toLowerCase().contains("opds-catalog")) continue;
-        if(!link.rel.toLowerCase().contains("open-access")) continue;
-        processedLinks.add(link.href);
-      }
-    }
-    
-    for(Page page : pages)
-    {
-      for(Entry entry : page.entries)
-      {
-        List<Link> currentLinks = new ArrayList<Link>();
-        
-        for(Link link : entry.links)
-        {
-          if(link.type.toLowerCase().contains("opds-catalog")) continue;
-          if(!link.rel.toLowerCase().contains("open-access")) continue;
-          if(processedLinks.contains(link.href)) continue;
-          currentLinks.add(link);
-          processedLinks.add(link.href);
-        }
-        
-        if(currentLinks.isEmpty()) continue;
-        
-        String entryId = entry.id;
-        entryId = entryId.replace("tag:book:", "");
-        
-        Entry newEntry = new Entry(entry.updated, entryId, entry.title, entry.author);
-        newEntry.links = currentLinks;
-        entries.add(newEntry);
-      }
-    }
-    
-    return entries;
-  }
-  
+{  
   public static Page downloadPage(String url) throws IOException
   {
     String reply = HttpClientWithProxy.doRequest(url);
@@ -69,51 +23,29 @@ public class Crawler
     return page;
   }
   
-  public static List<Page> downloadPages(String root, String search) throws IOException
+  public static List<Page> downloadCatalog(String root, String url) throws IOException
   {
     List<Page> pages = new ArrayList<Page>();
     Set<String> currentUrls = new HashSet<String>();
     Set<String> processedUrls = new HashSet<String>();
     
-    Page page = downloadPage(root + "/opds" + search);
-    pages.add(page);
-    
-    // store the link to the next page in currentUrls
-    page.links.stream()
-      .filter((l) -> l.rel.equals("next"))
-      .forEach(lnk ->
-      {
-        currentUrls.add(lnk.href);
-      }
-    );
-    
-    // store the catalog links in currentUrls
-    for(Entry entry : page.entries)
-    {
-      entry.links.stream()
-        .filter((l) -> l.type != null && l.type.toLowerCase().contains("opds-catalog"))
-        .forEach(lnk ->
-        {
-          currentUrls.add(lnk.href);
-        }
-      );
-    }
+    currentUrls.add(url);
     
     while(true)
     {
       boolean found = false;
       Set<String> nextUrls = new HashSet<String>();
       
-      for(String url : currentUrls)
+      for(String currentUrl : currentUrls)
       {
-        if(processedUrls.contains(url)) continue;
+        if(processedUrls.contains(currentUrl)) continue;
 
         found = true;
         
-        Page nextPage = downloadPage(root + url);
+        Page nextPage = downloadPage(root + currentUrl);
         pages.add(nextPage);
         
-        processedUrls.add(url);
+        processedUrls.add(currentUrl);
           
         nextPage.links.stream()
           .filter((l) -> l.rel.equals("next"))
@@ -122,17 +54,6 @@ public class Crawler
             nextUrls.add(lnk.href);
           }
         );
-        
-        for(Entry entry : nextPage.entries)
-        {
-          entry.links.stream()
-            .filter((l) -> l.type != null && l.type.toLowerCase().contains("opds-catalog"))
-            .forEach(lnk ->
-            {
-              nextUrls.add(lnk.href);
-            }
-          );
-        }
       }
     
       currentUrls.clear();
@@ -141,6 +62,12 @@ public class Crawler
       if(!found) break;
     }
     
+    return pages;
+  }
+  
+  public static List<Page> downloadCatalogSearch(String root, String search) throws IOException
+  {
+    List<Page> pages = downloadCatalog(root, "/opds" + search);
     return pages;
   }
 }

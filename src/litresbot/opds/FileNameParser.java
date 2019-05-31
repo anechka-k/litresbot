@@ -23,130 +23,51 @@
 
 package litresbot.opds;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class FileNameParser
 {
-  private static List<FileType> types = new ArrayList<>();
-  
-  static
+  public static String[] parse(String url, String type)
   {
-    add(new FileNameParser.FileType("mobi")
-    {
-      @Override
-      public String parse(String url)
-      {
-        String[] parts = url.split("/");
-        return parts[parts.length - 2] + "." + parts[parts.length - 1];
-      }
-    });
+    String[] parts = url.split("/");
+    String[] typeParts = type.split("/");
     
-    add(new FileNameParser.FileType("\\w+\\+zip")
+    if(!type.startsWith("application/"))
     {
-      @Override
-      public String parse(String url)
-      {
-        String[] parts = url.split("/");
-        return parts[parts.length - 2] + "." + parts[parts.length - 1] + ".zip";
-      }
-    });
+      String[] fileparts = new String[2];
+      fileparts[0] = parts[parts.length - 2];
+      fileparts[1] = parts[parts.length - 1];
       
-    add(new FileNameParser.FileType("djvu")
-    {
-      @Override
-      public String parse(String url)
-      {
-        String[] parts = url.split("/");
-        return parts[parts.length - 1] + ".djvu";
-      }
-    });
-    
-    add(new FileNameParser.FileType("pdf")
-    {
-      @Override
-      public String parse(String url)
-      {
-        String[] parts = url.split("/");
-        return parts[parts.length - 1] + ".pdf";
-      }
-    });
-    
-    add(new FileNameParser.FileType("doc")
-    {
-      @Override
-      public String parse(String url)
-      {
-        String[] parts = url.split("/");
-        return parts[parts.length - 1] + ".doc";
-      }
-    });
-    
-    add(new FileNameParser.FileType("\\w+\\+rar")
-    {
-      @Override
-      public String parse(String url)
-      {
-        String[] parts = url.split("/");
-        return parts[parts.length - 2] + "." + parts[parts.length - 1] + ".rar";
-      }
-    });
-    
-    add(new FileNameParser.FileType("fb2")
-    {
-      @Override
-      public String parse(String url)
-      {
-        String[] parts = url.split("/");
-        return parts[parts.length - 2] + "." + parts[parts.length - 1] + ".zip";
-      }
-    });
-  }
-    
-  private static FileType unknown = new FileType("any")
-  {
-    @Override
-    public String parse(String url)
-    {
-      String[] parts = url.split("/");
-      return parts[parts.length - 2] + "." + parts[parts.length - 1];
+      return fileparts;
     }
-  };
-
-  public static String parse(String url)
-  {
-    return types
-      .stream()
-      .filter(fileType -> fileType.isMatch(url))
-      .findAny()
-      .orElse(unknown).parse(url);
-  }
-
-  public static void add(FileType fileType)
-  {
-    if (!types.contains(fileType))
+    
+    String typeMime = typeParts[1];
+    typeMime = typeMime.replace("x-mobipocket-ebook", "mobi");    
+    
+    String typeMimeShort = typeMime.replace("+zip", "");
+      
+    if(typeMime.endsWith("+zip"))
     {
-      types.add(fileType);
+      String[] fileparts = new String[3];
+      fileparts[0] = parts[parts.length - 2];
+      fileparts[1] = typeMimeShort;
+      fileparts[2] = "zip";
+      return fileparts;
     }
-  }
-
-  public static abstract class FileType
-  {
-    private Pattern p;
-
-    public FileType(String pattern)
+    
+    typeMimeShort = typeMime.replace("+rar", "");
+    
+    if(typeMime.endsWith("+rar"))
     {
-      this.p = Pattern.compile(pattern);
+      String[] fileparts = new String[3];
+      fileparts[0] = parts[parts.length - 2];
+      fileparts[1] = typeMimeShort;
+      fileparts[2] = "rar";
+      return fileparts;
     }
-
-    public boolean isMatch(String url)
-    {
-      Matcher m = p.matcher(url);
-      return m.find();
-    }
-
-    public abstract String parse(String url);
+      
+    String[] fileparts = new String[2];
+    fileparts[0] = parts[parts.length - 2];
+    fileparts[1] = typeMime;
+      
+    return fileparts;
   }
 }

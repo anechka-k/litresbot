@@ -207,17 +207,16 @@ public class FlibustaClient
     
     for(Link link : bookInfo.links)
     {
-      String type = link.type.replace("application/", "");
+      String[] fileparts = FileNameParser.parse(link.href, link.type);
+      String type = fileparts[1];
+      
       long hashCode = Integer.toUnsignedLong(link.href.hashCode());
       String id = Long.toHexString(hashCode);
-            
-      // create a copy of the link with trimmed type
-      Link newLink = new Link(link.href, type, link.title, link.rel);
-      urlCache.put(id, newLink);
-      
-      String shortBookType = type.replace("+zip", "");
+
+      urlCache.put(id, link);
+
       InlineKeyboardButton btn1 = new InlineKeyboardButton();
-      btn1.setText(shortBookType.toUpperCase());
+      btn1.setText(type.toUpperCase());
       btn1.setCallbackData("/download" + hashCode);
       buttonsRow.add(btn1);
     }
@@ -256,17 +255,14 @@ public class FlibustaClient
     Link link = urlCache.getIfPresent(hashCodeHex);
     if(link == null) return null;
     
-    String url = link.href;
-    String type= link.type;
-    
-    String filename = FileNameParser.parse(url);
-    
-    if(type.endsWith("+zip") && (!filename.endsWith(".zip")))
+    String[] fileparts = FileNameParser.parse(link.href, link.type);
+    String filenameString = fileparts[0] + "." + fileparts[1];
+    if(fileparts.length > 2)
     {
-      filename += ".zip";
+      filenameString += ("." + fileparts[2]);
     }
     
-    return filename;
+    return filenameString;
   }
 
   public static byte[] downloadWithCache(BookFileId bookFileId) throws IOException

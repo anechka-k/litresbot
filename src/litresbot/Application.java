@@ -5,6 +5,8 @@ import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.ApiContext;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 
+import litresbot.localisation.UserMessages;
+import litresbot.localisation.UserMessagesRu;
 import litresbot.util.Logger;
 
 public class Application
@@ -15,6 +17,9 @@ public class Application
   public static Boolean terminated = false;
   
   private static TelegramBotsApi telegram;
+  
+  // set the locale depending on the bot type
+  public static UserMessages userMessages = new UserMessagesRu();
   
   public static void main(String[] args)
   {

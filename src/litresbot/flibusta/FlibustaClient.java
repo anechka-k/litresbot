@@ -1,60 +1,33 @@
 package litresbot.flibusta;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import litresbot.HttpClientWithProxy;
+import litresbot.AppProperties;
+import litresbot.HttpClientPostLocal;
 import litresbot.SendMessageList;
 import litresbot.books.BookDownloader;
 import litresbot.books.BookFileId;
+import litresbot.books.BookFileLink;
+import litresbot.books.BookInfo;
 import litresbot.books.BookInfoId;
 import litresbot.books.PluralsText;
-import litresbot.opds.Crawler;
-import litresbot.opds.Entry;
-import litresbot.opds.FileNameParser;
-import litresbot.opds.Link;
-import litresbot.opds.Page;
-import litresbot.opds.PageParser;
-import litresbot.util.Convert;
+import litresbot.books.PluralsTextEn;
+import litresbot.localisation.UserMessagesEn;
 import litresbot.util.Logger;
-import litresbot.util.Plurals;
-import litresbot.util.Plurals.PluralForm;
 
-@SuppressWarnings("unused")
 public class FlibustaClient
 {
   public static final int URL_CACHE_SIZE = 1000;
   
-  private static final String rootOPDStor = "http://flibustahezeous3.onion";
-  private static final String rootOPDShttp = "http://flibusta.is";
-  private static final String rootOPDSDefault = rootOPDStor;
-  private static final String authorSearch = "/search?searchType=authors&searchTerm=%s";
-  private static final String bookSearch = "/search?searchType=books&searchTerm=%s";
-  private static Cache<String, Link> urlCache;
+  private static Cache<String, BookFileLink> urlCache;
   static
   {
     urlCache = CacheBuilder.newBuilder().maximumSize(URL_CACHE_SIZE).build();
@@ -65,10 +38,10 @@ public class FlibustaClient
     BookDownloader.folder = "./flibooks";
   }
   
-  private static HashMap<String, Entry> booksCache;
+  private static HashMap<String, BookInfo> booksCache;
   static
   {
-    booksCache = new HashMap<String, Entry>();
+    booksCache = new HashMap<String, BookInfo>();
   }
   
   public static SendMessageList getBooks(String searchQuery)
@@ -77,32 +50,49 @@ public class FlibustaClient
     
     try
     {
+      //List<BookInfo> bookEntries = new ArrayList<BookInfo>();
+      
       String encodedSearch = URLEncoder.encode(searchQuery, "UTF-8");
-      List<Entry> entries = new ArrayList<Entry>();
+      String opdsFlibustaUrl = AppProperties.getStringProperty("opdsFlibustaUrl");
+      String requestUrl = opdsFlibustaUrl + "?request=searchBook&query=" + encodedSearch;
       
-      List<Page> bookPages = FlibustaCrawler.downloadBooksSearch(rootOPDSDefault, String.format(bookSearch, encodedSearch));
-      List<Page> authorPages = FlibustaCrawler.downloadAuthorsSearch(rootOPDSDefault, String.format(authorSearch, encodedSearch));
+      JSONObject requestResult = HttpClientPostLocal.request(requestUrl);
       
-      List<Page> allPages = new ArrayList<Page>();
-      allPages.addAll(bookPages);
-      allPages.addAll(authorPages);
+      String resultStatus = requestResult.getString("result");
       
-      List<Entry> bookEntries = FlibustaCrawler.processBooks(allPages);
-      
-      Long booksCount = (long) bookEntries.size();
-      
-      if(booksCount == 0)
+      if(!resultStatus.contentEquals("ok"))
       {
-        result.appendTextPage("К сожалению ничего не найдено");
+        Logger.logInfoMessage("OPDS search results an error: " + requestResult.getString("error"));
+        
+        result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
         result.endTextPage();
         return result;
       }
       
-      String booksText = PluralsText.convert("книга", booksCount);
-      result.appendTextPage("Найдено: " + bookEntries.size() + " " + booksText + "\n\n");
+      JSONArray books = (JSONArray) requestResult.get("books");
+      
+      if((books == null) || (books.length() == 0))
+      {
+        result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
+        result.endTextPage();
+        return result;
+      }
+      
+      int booksCount = books.length();
+      
+      String bookText = litresbot.Application.userMessages.get(UserMessagesEn.bookText);
+      String booksText = PluralsTextEn.convert(bookText, (long) booksCount);
+      
+      if(litresbot.Application.userMessages.language().contentEquals("ru"))
+      {
+        booksText = PluralsText.convert(bookText, (long) booksCount);
+      }
+      
+      result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.searchFoundTotal) +
+          booksCount + " " + booksText + "\n\n");
       result.endTextPage();
       
-      for(Entry entry : bookEntries)
+      /*for(BookInfo entry : bookEntries)
       {
         result.appendTextPage("<b>");
         result.appendTextPage(entry.title);
@@ -115,7 +105,7 @@ public class FlibustaClient
           result.appendTextPage(")\n");
         }
             
-        result.appendTextPage("Скачать: ");
+        result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.searchGoto));
         result.appendTextPage("/bookinfo");
         result.appendTextPage(entry.id);
               
@@ -123,9 +113,9 @@ public class FlibustaClient
         result.endTextPage();
         
         booksCache.put(entry.id, entry);
-      }
+      }*/
     }
-    catch (IOException e)
+    catch (Exception e)
     {
       Logger.logMessage("Http request failed: ", e);
     }
@@ -137,15 +127,15 @@ public class FlibustaClient
   {
     SendMessageList result = new SendMessageList(4096);
     
-    Entry bookInfo = booksCache.get(bookId.id);
+    BookInfo bookInfo = booksCache.get(bookId.id);
     if(bookInfo == null)
     {
-      result.appendTextPage("К сожалению ничего не найдено");
+      result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
       result.endTextPage();
       return result;
     }
     
-    result.appendTextPage("<b>");
+    /*result.appendTextPage("<b>");
     result.appendTextPage(bookInfo.title);
     result.appendTextPage("</b>\n");
         
@@ -161,9 +151,9 @@ public class FlibustaClient
     List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
     InlineKeyboardButton btn1 = new InlineKeyboardButton();
     InlineKeyboardButton btn2 = new InlineKeyboardButton();
-    btn1.setText("Скачать");
+    btn1.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchDownload));
     btn1.setCallbackData("/format" + bookInfo.id);
-    btn2.setText("Читать");
+    btn2.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchRead));
     btn2.setCallbackData("/read" + bookInfo.id);
     
     buttonsRow.add(btn1);
@@ -171,7 +161,7 @@ public class FlibustaClient
     
     List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
     buttons.add(buttonsRow);
-    result.appendButtons(buttons);
+    result.appendButtons(buttons);*/
     
     return result;
   }
@@ -180,15 +170,15 @@ public class FlibustaClient
   {
     SendMessageList result = new SendMessageList(4096);
     
-    Entry bookInfo = booksCache.get(bookId.id);
+    BookInfo bookInfo = booksCache.get(bookId.id);
     if(bookInfo == null)
     {
-      result.appendTextPage("К сожалению ничего не найдено");
+      result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
       result.endTextPage();
       return result;
     }
     
-    result.appendTextPage("<b>");
+    /*result.appendTextPage("<b>");
     result.appendTextPage(bookInfo.title);
     result.appendTextPage("</b>\n");
         
@@ -223,7 +213,7 @@ public class FlibustaClient
     
     List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
     buttons.add(buttonsRow);
-    result.appendButtons(buttons);
+    result.appendButtons(buttons);*/
     
     return result;
   }
@@ -237,32 +227,19 @@ public class FlibustaClient
   }
   
   public static String getUrlFromBookFileId(BookFileId id)
-  {
-    long hashCode = Convert.parseLong(id.id);
-    String hashCodeHex = Long.toHexString(hashCode);
-    
-    Link link = urlCache.getIfPresent(hashCodeHex);  
+  {    
+    BookFileLink link = urlCache.getIfPresent(id.id);  
     if(link == null) return null;
     
     return link.href;
   }
    
   public static String getFilenameFromBookFileId(BookFileId id)
-  {
-    long hashCode = Convert.parseLong(id.id);
-    String hashCodeHex = Long.toHexString(hashCode);
-    
-    Link link = urlCache.getIfPresent(hashCodeHex);
+  {    
+    BookFileLink link = urlCache.getIfPresent(id.id);
     if(link == null) return null;
     
-    String[] fileparts = FileNameParser.parse(link.href, link.type);
-    String filenameString = fileparts[0] + "." + fileparts[1];
-    if(fileparts.length > 2)
-    {
-      filenameString += ("." + fileparts[2]);
-    }
-    
-    return filenameString;
+    return id.id;
   }
 
   public static byte[] downloadWithCache(BookFileId bookFileId) throws IOException
@@ -282,7 +259,7 @@ public class FlibustaClient
     }
     
     Logger.logInfoMessage("Downloading book: " + bookUrlShort);
-    byte[] book = BookDownloader.downloadWithCache(rootOPDSDefault, bookUrlShort, fileName);
+    byte[] book = /*BookDownloader.downloadWithCache(rootOPDSDefault, bookUrlShort, fileName)*/null;
     Logger.logInfoMessage("Downloading book done: " + bookUrlShort);
     
     return book;

@@ -10,10 +10,12 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import litresbot.books.BookFileId;
 import litresbot.books.BookInfoId;
 import litresbot.flibusta.FlibustaClient;
+import litresbot.localisation.UserMessagesEn;
 import litresbot.util.Logger;
 
+
 public class TelegramBotCommands
-{
+{  
   public static void commandReceived(TelegramBot bot, Update update)
   {
     String cmd = "";
@@ -30,13 +32,13 @@ public class TelegramBotCommands
     {
       if (!update.hasMessage())
       {
-        bot.sendReply(update, "Неизвестная ошибка");
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorUnknown));
         return;
       }
       
       if (!update.getMessage().hasText())
       {
-        bot.sendReply(update, "Неизвестная ошибка");
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorUnknown));
         return;
       }
       
@@ -47,7 +49,7 @@ public class TelegramBotCommands
     
     if (cmd == null)
     {
-      bot.sendReply(update, "Неизвестная ошибка");
+      bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorUnknown));
       return;
     }
     
@@ -134,7 +136,7 @@ public class TelegramBotCommands
       
       if(book == null)
       {
-        bot.sendReply(update, "Не удалось скачать файл");
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorCouldNotDownloadFile));
         return;
       }
       
@@ -144,7 +146,7 @@ public class TelegramBotCommands
       
       if(fileName == null)
       {
-        bot.sendReply(update, "Неверный номер книги");
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorWrongBookId));
         return;
       }
       
@@ -165,16 +167,12 @@ public class TelegramBotCommands
   
   public static String welcomeScreen()
   {
-    return "Введите название книги для поиска.";
+    return Application.userMessages.welcomeScreen();
   }
   
   public static String helpScreen()
   {
-    return 
-      "Список доступных команд:\n" +
-      "/start - начало работы с ботом.\n" +
-      "/help - справка по работе с ботом.\n" +
-      "/book - поиск по названию книги.";
+    return Application.userMessages.helpScreen();
   }
 
   private static String cmdArgument(String cmd, String prefix)

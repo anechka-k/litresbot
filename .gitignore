@@ -54,3 +54,4 @@ litresbot.properties
 *.log
 *.lck
 /flibooks/
+litresbot.jar

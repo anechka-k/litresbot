@@ -2,17 +2,18 @@ package litresbot.flibusta;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import litresbot.AppProperties;
-import litresbot.HttpClientPostLocal;
-import litresbot.SendMessageList;
 import litresbot.books.BookDownloader;
 import litresbot.books.BookFileId;
 import litresbot.books.BookFileLink;
@@ -20,7 +21,10 @@ import litresbot.books.BookInfo;
 import litresbot.books.BookInfoId;
 import litresbot.books.PluralsText;
 import litresbot.books.PluralsTextEn;
+import litresbot.http.HttpClientWithProxy;
+import litresbot.http.HttpSourceType;
 import litresbot.localisation.UserMessagesEn;
+import litresbot.telegram.SendMessageList;
 import litresbot.util.Logger;
 
 public class FlibustaClient
@@ -44,41 +48,83 @@ public class FlibustaClient
     booksCache = new HashMap<String, BookInfo>();
   }
   
-  public static SendMessageList getBooks(String searchQuery)
+  public static List<BookInfo> getOpdsBooks(String searchQuery) throws JSONException, IOException
   {
-    SendMessageList result = new SendMessageList(4096);
+    List<BookInfo> bookEntries = new ArrayList<BookInfo>();
     
     try
     {
-      //List<BookInfo> bookEntries = new ArrayList<BookInfo>();
-      
       String encodedSearch = URLEncoder.encode(searchQuery, "UTF-8");
       String opdsFlibustaUrl = AppProperties.getStringProperty("opdsFlibustaUrl");
       String requestUrl = opdsFlibustaUrl + "?request=searchBook&query=" + encodedSearch;
       
-      JSONObject requestResult = HttpClientPostLocal.request(requestUrl);
+      String postAnswer = HttpClientWithProxy.sendPostRequest(requestUrl, "", HttpSourceType.OPDS_SERVICE);
+      JSONObject requestResult = new JSONObject(postAnswer);
       
       String resultStatus = requestResult.getString("result");
       
       if(!resultStatus.contentEquals("ok"))
       {
         Logger.logInfoMessage("OPDS search results an error: " + requestResult.getString("error"));
-        
-        result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
-        result.endTextPage();
-        return result;
+        return bookEntries;
       }
       
-      JSONArray books = (JSONArray) requestResult.get("books");
+      JSONArray books = requestResult.getJSONArray("books");
+      String searchSite = requestResult.getString("site");
       
-      if((books == null) || (books.length() == 0))
+      for(int i = 0; i < books.length(); i++)
+      {
+        JSONObject book = books.getJSONObject(i);
+        
+        BookInfo bookInfo = new BookInfo();
+        bookInfo.author = book.getString("author");
+        bookInfo.title = book.getString("title");
+        bookInfo.id = book.getString("id");
+        bookInfo.site = searchSite;
+        
+        bookInfo.links = new ArrayList<BookFileLink>();
+        
+        JSONArray links = book.getJSONArray("links");
+        for(int j = 0; j < links.length(); j++)
+        {
+          JSONObject link = links.getJSONObject(j);
+          
+          BookFileLink bookFileLink = new BookFileLink();
+          bookFileLink.href = link.getString("href");
+          bookFileLink.format = link.getString("format");
+          
+          bookInfo.links.add(bookFileLink);
+        }
+        
+        bookEntries.add(bookInfo);
+      }
+    }
+    catch(Exception e)
+    {
+      Logger.logMessage("Error while searching with OPDS service", e);
+      bookEntries = new ArrayList<BookInfo>();
+      return bookEntries;
+    }
+    
+    return bookEntries;
+  }
+  
+  public static SendMessageList getBooks(String searchQuery)
+  {
+    SendMessageList result = new SendMessageList(4096);
+    
+    try
+    {
+      List<BookInfo> bookEntries = getOpdsBooks(searchQuery);
+      
+      int booksCount = bookEntries.size();
+      
+      if(booksCount == 0)
       {
         result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
         result.endTextPage();
         return result;
       }
-      
-      int booksCount = books.length();
       
       String bookText = litresbot.Application.userMessages.get(UserMessagesEn.bookText);
       String booksText = PluralsTextEn.convert(bookText, (long) booksCount);
@@ -92,28 +138,28 @@ public class FlibustaClient
           booksCount + " " + booksText + "\n\n");
       result.endTextPage();
       
-      /*for(BookInfo entry : bookEntries)
+      for(BookInfo book : bookEntries)
       {
         result.appendTextPage("<b>");
-        result.appendTextPage(entry.title);
+        result.appendTextPage(book.title);
         result.appendTextPage("</b>\n");
             
-        if (entry.author != null)
+        if (book.author != null)
         {
           result.appendTextPage(" (");
-          result.appendTextPage(entry.author);
+          result.appendTextPage(book.author);
           result.appendTextPage(")\n");
         }
             
         result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.searchGoto));
         result.appendTextPage("/bookinfo");
-        result.appendTextPage(entry.id);
+        result.appendTextPage(book.id);
               
         result.appendTextPage("\n\n");
         result.endTextPage();
         
-        booksCache.put(entry.id, entry);
-      }*/
+        booksCache.put(book.id, book);
+      }
     }
     catch (Exception e)
     {

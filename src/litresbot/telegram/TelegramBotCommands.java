@@ -1,4 +1,4 @@
-package litresbot;
+package litresbot.telegram;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import litresbot.Application;
 import litresbot.books.BookFileId;
 import litresbot.books.BookInfoId;
 import litresbot.flibusta.FlibustaClient;

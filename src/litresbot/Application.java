@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 
 import litresbot.localisation.UserMessages;
 import litresbot.localisation.UserMessagesRu;
+import litresbot.telegram.TelegramBot;
 import litresbot.util.Logger;
 
 public class Application
@@ -31,16 +32,16 @@ public class Application
     DefaultBotOptions botOptions = ApiContext.getInstance(DefaultBotOptions.class);
     telegram = new TelegramBotsApi();
     
-    boolean useProxy = AppProperties.getBooleanProperty("useProxy");
+    boolean telegramUseProxy = AppProperties.getBooleanProperty("telegramUseProxy");
     
-    if(useProxy)
+    if(telegramUseProxy)
     {
-      botOptions.setProxyHost(AppProperties.getStringProperty("proxyHost"));
-      botOptions.setProxyPort(AppProperties.getIntProperty("proxyPort"));
+      botOptions.setProxyHost(AppProperties.getStringProperty("telegramProxyHost"));
+      botOptions.setProxyPort(AppProperties.getIntProperty("telegramProxyPort"));
       // default SOCKS5
       botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
       
-      String proxyTypeString = AppProperties.getStringProperty("proxyType");
+      String proxyTypeString = AppProperties.getStringProperty("telegramProxyType");
       
       if(proxyTypeString.compareToIgnoreCase("http") == 0)
       {

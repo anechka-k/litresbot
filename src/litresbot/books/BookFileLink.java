@@ -4,9 +4,10 @@ package litresbot.books;
 
 public class BookFileLink
 {
+  public String href;
+  public String format;
+  
   public BookFileLink()
   {
   }
-  
-  public String href;
 }

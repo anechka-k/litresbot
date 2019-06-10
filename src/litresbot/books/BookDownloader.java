@@ -9,7 +9,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import litresbot.HttpClientWithProxy;
+import litresbot.http.HttpClientWithProxy;
+import litresbot.http.HttpSourceType;
 import litresbot.util.Logger;
 
 public class BookDownloader
@@ -48,7 +49,7 @@ public class BookDownloader
     }
     
     String url = root + bookUrl;
-    InputStream bookData = HttpClientWithProxy.download(url, fileName);
+    InputStream bookData = HttpClientWithProxy.download(url, fileName, HttpSourceType.BOOKS);
     
     BufferedInputStream in = new BufferedInputStream(bookData);
     FileOutputStream fos = new FileOutputStream(folder + "/" + fileName);

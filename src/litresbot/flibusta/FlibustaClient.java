@@ -9,18 +9,15 @@ import java.util.List;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import litresbot.AppProperties;
 import litresbot.books.BookDownloader;
-import litresbot.books.BookFileId;
 import litresbot.books.BookFileLink;
 import litresbot.books.BookInfo;
-import litresbot.books.BookInfoId;
-import litresbot.books.PluralsText;
-import litresbot.books.PluralsTextEn;
+import litresbot.books.FileExtensions;
+import litresbot.books.plurals.PluralsText;
+import litresbot.books.plurals.PluralsTextEn;
 import litresbot.http.HttpClientWithProxy;
 import litresbot.http.HttpSourceType;
 import litresbot.localisation.UserMessagesEn;
@@ -28,15 +25,7 @@ import litresbot.telegram.SendMessageList;
 import litresbot.util.Logger;
 
 public class FlibustaClient
-{
-  public static final int URL_CACHE_SIZE = 1000;
-  
-  private static Cache<String, BookFileLink> urlCache;
-  static
-  {
-    urlCache = CacheBuilder.newBuilder().maximumSize(URL_CACHE_SIZE).build();
-  }
-  
+{  
   static
   {
     BookDownloader.folder = "./flibooks";
@@ -126,6 +115,14 @@ public class FlibustaClient
         return result;
       }
       
+      // create cache data to allow instant access by book id
+      for(BookInfo book : bookEntries)
+      {
+        booksCache.put(book.id, book);
+      }
+      
+      // generate the search result header - how much books found
+      
       String bookText = litresbot.Application.userMessages.get(UserMessagesEn.bookText);
       String booksText = PluralsTextEn.convert(bookText, (long) booksCount);
       
@@ -137,6 +134,8 @@ public class FlibustaClient
       result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.searchFoundTotal) +
           booksCount + " " + booksText + "\n\n");
       result.endTextPage();
+      
+      // generate the search result body
       
       for(BookInfo book : bookEntries)
       {
@@ -157,8 +156,6 @@ public class FlibustaClient
               
         result.appendTextPage("\n\n");
         result.endTextPage();
-        
-        booksCache.put(book.id, book);
       }
     }
     catch (Exception e)
@@ -169,11 +166,11 @@ public class FlibustaClient
     return result;
   }
   
-  public static SendMessageList getBookInfo(BookInfoId bookId)
+  public static SendMessageList getBookInfo(String bookId)
   {
     SendMessageList result = new SendMessageList(4096);
     
-    BookInfo bookInfo = booksCache.get(bookId.id);
+    BookInfo bookInfo = booksCache.get(bookId);
     if(bookInfo == null)
     {
       result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
@@ -181,7 +178,9 @@ public class FlibustaClient
       return result;
     }
     
-    /*result.appendTextPage("<b>");
+    // generate the book info header
+    
+    result.appendTextPage("<b>");
     result.appendTextPage(bookInfo.title);
     result.appendTextPage("</b>\n");
         
@@ -193,6 +192,8 @@ public class FlibustaClient
     }
     
     result.endTextPage();
+    
+    // generate the book info download and read buttons
     
     List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
     InlineKeyboardButton btn1 = new InlineKeyboardButton();
@@ -207,16 +208,16 @@ public class FlibustaClient
     
     List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
     buttons.add(buttonsRow);
-    result.appendButtons(buttons);*/
+    result.appendButtons(buttons);
     
     return result;
   }
   
-  public static SendMessageList chooseBookFormat(BookInfoId bookId)
+  public static SendMessageList chooseBookFormat(String bookId)
   {
     SendMessageList result = new SendMessageList(4096);
     
-    BookInfo bookInfo = booksCache.get(bookId.id);
+    BookInfo bookInfo = booksCache.get(bookId);
     if(bookInfo == null)
     {
       result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
@@ -224,7 +225,9 @@ public class FlibustaClient
       return result;
     }
     
-    /*result.appendTextPage("<b>");
+    // generate the book info header
+    
+    result.appendTextPage("<b>");
     result.appendTextPage(bookInfo.title);
     result.appendTextPage("</b>\n");
         
@@ -241,25 +244,21 @@ public class FlibustaClient
 
     List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
     
-    for(Link link : bookInfo.links)
-    {
-      String[] fileparts = FileNameParser.parse(link.href, link.type);
-      String type = fileparts[1];
+    for(BookFileLink link : bookInfo.links)
+    {      
+      String formatType = FileExtensions.detectFormat(link.format);
       
-      long hashCode = Integer.toUnsignedLong(link.href.hashCode());
-      String id = Long.toHexString(hashCode);
-
-      urlCache.put(id, link);
+      if(formatType == null) continue;
 
       InlineKeyboardButton btn1 = new InlineKeyboardButton();
-      btn1.setText(type.toUpperCase());
-      btn1.setCallbackData("/download" + hashCode);
+      btn1.setText(formatType.toUpperCase());
+      btn1.setCallbackData("/download" + formatType.toLowerCase() + bookId);
       buttonsRow.add(btn1);
     }
     
     List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
     buttons.add(buttonsRow);
-    result.appendButtons(buttons);*/
+    result.appendButtons(buttons);
     
     return result;
   }
@@ -272,42 +271,81 @@ public class FlibustaClient
     return result;
   }
   
-  public static String getUrlFromBookFileId(BookFileId id)
-  {    
-    BookFileLink link = urlCache.getIfPresent(id.id);  
-    if(link == null) return null;
+  public static String getUrlFromBook(String bookId, String format)
+  {
+    String root = getUrlRootFromBook(bookId);
+    if(root == null) return null;
     
-    return link.href;
+    String url = getUrlShortFromBook(bookId, format);
+    if(url == null) return null;
+    
+    return root + url;
   }
    
-  public static String getFilenameFromBookFileId(BookFileId id)
-  {    
-    BookFileLink link = urlCache.getIfPresent(id.id);
-    if(link == null) return null;
+  public static String getFilenameFromBook(String bookId, String format)
+  {
+    BookInfo bookInfo = booksCache.get(bookId);
+    if(bookInfo == null)
+    {
+      return bookId;
+    }
     
-    return id.id;
+    for(BookFileLink link : bookInfo.links)
+    {
+      String linkFormat = FileExtensions.detectFormat(link.format);
+      if(!linkFormat.contentEquals(format)) continue;
+      
+      return bookId + "." + link.format;
+    }
+    
+    return bookId;
   }
 
-  public static byte[] downloadWithCache(BookFileId bookFileId) throws IOException
+  public static byte[] downloadWithCache(String bookId, String format) throws IOException
   {
-    String bookUrlShort = getUrlFromBookFileId(bookFileId);
+    String root = getUrlRootFromBook(bookId);
+    if(root == null) return null;
     
-    if(bookUrlShort == null)
-    {
-      return null;
-    }
+    String url = getUrlShortFromBook(bookId, format);
+    if(url == null) return null;
     
-    String fileName = getFilenameFromBookFileId(bookFileId);
+    String fileName = getFilenameFromBook(bookId, format);
+    if(fileName == null) return null;
     
-    if(fileName == null)
-    {
-      return null;
-    }
-    
-    Logger.logInfoMessage("Downloading book: " + bookUrlShort);
-    byte[] book = /*BookDownloader.downloadWithCache(rootOPDSDefault, bookUrlShort, fileName)*/null;
-    Logger.logInfoMessage("Downloading book done: " + bookUrlShort);
+    Logger.logInfoMessage("Downloading book: " + url);
+    byte[] book = BookDownloader.downloadWithCache(root, url, fileName);
+    Logger.logInfoMessage("Downloading book done: " + url);
     
     return book;
+  }
+  
+  private static String getUrlRootFromBook(String bookId)
+  {    
+    BookInfo book = booksCache.get(bookId);  
+    if(book == null) return null;    
+    return book.site;
+  }
+  
+  private static String getUrlShortFromBook(String bookId, String format)
+  {    
+    BookInfo book = booksCache.get(bookId);  
+    if(book == null) return null;
+    
+    format = format.toLowerCase();
+    
+    for(BookFileLink link : book.links)
+    {
+      String linkFormat = link.format;
+      linkFormat = linkFormat.replace(".zip", "");
+      linkFormat = linkFormat.replace(".rar", "");
+      linkFormat = linkFormat.toLowerCase();
+      
+      if(linkFormat.contentEquals(format))
+      {
+        return link.href;
+      }
+    }
+    
+    return null;
   }
 }

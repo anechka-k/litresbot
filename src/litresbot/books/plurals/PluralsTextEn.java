@@ -1,6 +1,6 @@
-package litresbot.books;
+package litresbot.books.plurals;
 
-import litresbot.util.Plurals.PluralForm;
+import litresbot.books.plurals.Plurals.PluralForm;
 
 public final class PluralsTextEn
 {  

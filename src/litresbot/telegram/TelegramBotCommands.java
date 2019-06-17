@@ -8,8 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import litresbot.Application;
-import litresbot.books.BookFileId;
-import litresbot.books.BookInfoId;
+import litresbot.books.FileExtensions;
 import litresbot.flibusta.FlibustaClient;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.util.Logger;
@@ -91,7 +90,7 @@ public class TelegramBotCommands
     if(normalCmd.startsWith("/bookinfo"))
     {
       bot.sendBusy(update);
-      BookInfoId bookId = new BookInfoId(cmdArgument(cmd, "/bookinfo"));
+      String bookId = cmdArgument(cmd, "/bookinfo");
       
       SendMessageList reply = FlibustaClient.getBookInfo(bookId);      
       bot.sendReply(update, reply);
@@ -101,7 +100,7 @@ public class TelegramBotCommands
     if(normalCmd.startsWith("/format"))
     {
       bot.sendBusy(update);
-      BookInfoId bookId = new BookInfoId(cmdArgument(cmd, "/format"));
+      String bookId = cmdArgument(cmd, "/format");
       
       SendMessageList reply = FlibustaClient.chooseBookFormat(bookId);
       bot.sendReply(update, reply);
@@ -123,12 +122,21 @@ public class TelegramBotCommands
       bot.sendBusy(update);
       
       // bookFileId is not a bookId. bookFileId is an id of the URL to download e-book file
-      BookFileId bookFileId = new BookFileId(cmdArgument(cmd, "/download"));
+      String downloadArguments = cmdArgument(cmd, "/download");
+      String downloadFormat = FileExtensions.detectFormat(downloadArguments);
+      
+      if(downloadFormat == null)
+      {
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorWrongBookId));
+        return;
+      }
+      
+      String bookId = downloadArguments.substring(downloadFormat.length());
       
       byte[] book = null;
       try
       {
-        book = FlibustaClient.downloadWithCache(bookFileId);
+        book = FlibustaClient.downloadWithCache(bookId, downloadFormat);
       }
       catch (IOException e)
       {
@@ -143,7 +151,7 @@ public class TelegramBotCommands
       
       ByteArrayInputStream fileStream = new ByteArrayInputStream(book);
       
-      String fileName = FlibustaClient.getFilenameFromBookFileId(bookFileId);
+      String fileName = FlibustaClient.getFilenameFromBook(bookId, downloadFormat);
       
       if(fileName == null)
       {
@@ -158,7 +166,7 @@ public class TelegramBotCommands
       return;
     }
   }
-  
+
   public static void bookSearch(TelegramBot bot, Update update, String searchQuery)
   {
     bot.sendBusy(update);    

@@ -1,4 +1,4 @@
-package litresbot.util;
+package litresbot.books.plurals;
 
 public final class Plurals
 {

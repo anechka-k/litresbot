@@ -293,6 +293,7 @@ public class FlibustaClient
     for(BookFileLink link : bookInfo.links)
     {
       String linkFormat = FileExtensions.detectFormat(link.format);
+      if(linkFormat == null) continue;
       if(!linkFormat.contentEquals(format)) continue;
       
       return bookId + "." + link.format;
@@ -335,15 +336,11 @@ public class FlibustaClient
     
     for(BookFileLink link : book.links)
     {
-      String linkFormat = link.format;
-      linkFormat = linkFormat.replace(".zip", "");
-      linkFormat = linkFormat.replace(".rar", "");
-      linkFormat = linkFormat.toLowerCase();
+      String linkFormat = FileExtensions.detectFormat(link.format);
+      if(linkFormat == null) continue;
+      if(!linkFormat.contentEquals(format)) continue;
       
-      if(linkFormat.contentEquals(format))
-      {
-        return link.href;
-      }
+      return link.href;
     }
     
     return null;

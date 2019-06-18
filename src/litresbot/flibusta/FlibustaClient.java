@@ -1,15 +1,25 @@
 package litresbot.flibusta;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.xml.sax.SAXException;
+
+import com.kursx.parser.fb2.Body;
+import com.kursx.parser.fb2.FictionBook;
+import com.kursx.parser.fb2.P;
+import com.kursx.parser.fb2.Section;
+import com.kursx.parser.fb2.Title;
 
 import litresbot.AppProperties;
 import litresbot.books.BookDownloader;
@@ -23,6 +33,7 @@ import litresbot.http.HttpSourceType;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.telegram.SendMessageList;
 import litresbot.util.Logger;
+import litresbot.util.TelegramEscape;
 
 public class FlibustaClient
 {  
@@ -160,7 +171,7 @@ public class FlibustaClient
     }
     catch (Exception e)
     {
-      Logger.logMessage("Http request failed: ", e);
+      Logger.logMessage("Http request failed", e);
     }
     
     return result;
@@ -201,7 +212,7 @@ public class FlibustaClient
     btn1.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchDownload));
     btn1.setCallbackData("/format" + bookInfo.id);
     btn2.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchRead));
-    btn2.setCallbackData("/read" + bookInfo.id);
+    btn2.setCallbackData("/read" + bookInfo.id + "p" + "0");
     
     buttonsRow.add(btn1);
     buttonsRow.add(btn2);
@@ -263,11 +274,122 @@ public class FlibustaClient
     return result;
   }
 
-  public static SendMessageList readBook(String argument)
+  public static SendMessageList readBook(String bookId, Long position)
   {
+    String defaultFormat = "fb2";
     SendMessageList result = new SendMessageList(4096);
-    result.appendTextPage("Not implemented\n");
-    result.endTextPage();
+    
+    String root = getUrlRootFromBook(bookId);
+    if(root == null) return null;
+    
+    String url = getUrlShortFromBook(bookId, defaultFormat);
+    if(url == null) return null;
+    
+    String fileName = getFilenameFromBook(bookId, defaultFormat);
+    if(fileName == null) return null;
+    
+    byte[] book = null;
+        
+    try
+    {
+      Logger.logInfoMessage("Downloading book: " + url);
+      book = BookDownloader.downloadUnzipBook(root, url, fileName);
+      Logger.logInfoMessage("Downloading book done: " + url);
+    }
+    catch(IOException e)
+    {
+      Logger.logMessage("Book unzip failed", e);
+    }
+    
+    if(book == null)
+    {
+      result = new SendMessageList(4096);
+      result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorCouldNotDownloadFile));
+      result.endTextPage();
+      return result;
+    }
+    
+    // now we have a book content in byte array
+    // let's read it
+    
+    ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(book);
+    
+    try
+    {      
+      FictionBook fb2 = new FictionBook(byteArrayInputStream);
+      
+      Body fb2Body = fb2.getBody();
+      
+      if(fb2Body == null)
+      {
+        result = new SendMessageList(4096);
+        result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorCouldNotDownloadFile));
+        result.endTextPage();
+        return result;
+      }
+      
+      List<Section> sections = fb2Body.getSections();
+      
+      int i = 0;
+      
+      for(Section section : sections)
+      {
+        Title sectionTitle = section.getTitle();
+        
+        // show title if available
+        if(sectionTitle != null)
+        {
+          List<P> titleParagraphs = sectionTitle.getParagraphs();
+          
+          // show title paragraphs if available
+          if(titleParagraphs != null)
+          {
+            for(P paragraph : titleParagraphs)
+            {
+              String line = paragraph.getText();
+              String escapedLine = TelegramEscape.escapeText(line);
+              
+              result.appendTextPage("<b>");
+              result.appendTextPage("\n" + escapedLine + "\n\n");
+              result.appendTextPage("</b>");
+              result.endTextPage();
+            }
+          }
+        }
+        
+        List<P> paragraphs = section.getParagraphs();
+        
+        // show text if available
+        if(paragraphs != null)
+        {
+          for(P paragraph : paragraphs)
+          {
+            String line = paragraph.getText();
+            String escapedLine = TelegramEscape.escapeText(line);
+            
+            result.appendTextPage(escapedLine + "\n\n");
+            result.endTextPage();
+          }
+        }
+        
+        i++;
+        
+        if(i > 3) break;
+      }
+    }
+    catch(IOException e)
+    {
+      Logger.logMessage("Read book failed", e);
+    }
+    catch (ParserConfigurationException e)
+    {
+      Logger.logMessage("Parse book failed", e);
+    }
+    catch (SAXException e)
+    {
+      Logger.logMessage("Parse book failed", e);
+    }
+    
     return result;
   }
   

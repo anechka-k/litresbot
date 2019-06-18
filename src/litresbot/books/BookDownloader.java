@@ -2,12 +2,15 @@ package litresbot.books;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import litresbot.http.HttpClientWithProxy;
 import litresbot.http.HttpSourceType;
@@ -44,7 +47,7 @@ public class BookDownloader
         fis.close();
       }
       
-      book = baos.toByteArray();    
+      book = baos.toByteArray();
       return book;
     }
     
@@ -88,6 +91,82 @@ public class BookDownloader
     book = download(root, bookUrl, fileName);
     
     BookContentCache.addBook(bookUrl, book);
+    return book;
+  }
+  
+  public static byte[] downloadUnzipBook(String root, String bookUrl, String fileName) throws IOException
+  {
+    byte[] bookZip = downloadWithCache(root, bookUrl, fileName);
+    
+    if(bookZip == null)
+    {
+      throw new IOException("Could not download book. URL: " + bookUrl);
+    }
+    
+    // now unzip book in books folder
+    
+    if(!fileName.endsWith(".zip"))
+    {
+      throw new IOException("Not a zip archive. URL: " + bookUrl);
+    }
+    
+    String filenameStripped = fileName.replace(".zip", "");
+    String format = FileExtensions.detectExtension(filenameStripped);
+    
+    if(format == null)
+    {
+      throw new IOException("Not supported format. URL: " + bookUrl);
+    }
+    
+    ByteArrayInputStream fileStream = new ByteArrayInputStream(bookZip);
+    ZipInputStream zis = new ZipInputStream(fileStream);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      
+    try
+    {
+      ZipEntry zipEntry = null;
+          
+      while(true)
+      {
+        zipEntry = zis.getNextEntry();
+        if(zipEntry == null) break;
+            
+        String zipEntryName = zipEntry.getName();
+            
+        if(zipEntryName.toLowerCase().endsWith("." + format)) break;
+      }
+          
+      if(zipEntry == null)
+      {
+        throw new IOException("Book not found in zip archive. URL: " + bookUrl);
+      }
+          
+      byte[] buffer = new byte[1024];
+          
+      File newFile = new File(BookDownloader.folder + "/" + filenameStripped);
+      FileOutputStream fos = new FileOutputStream(newFile);
+          
+      try
+      {
+        int len;
+        while ((len = zis.read(buffer)) > 0)
+        {
+          fos.write(buffer, 0, len);
+          baos.write(buffer, 0, len);
+        }
+      }
+      finally
+      { 
+        fos.close();
+      }
+    }
+    finally
+    {
+      zis.closeEntry();
+      zis.close();
+    }
+        
+    byte[] book = baos.toByteArray();
     return book;
   }
 }

@@ -63,4 +63,19 @@ public class FileExtensions
     
     return null;
   }
+  
+  public static String detectExtension(String filename)
+  {
+    filename = filename.toLowerCase();
+    
+    for(String ext : supportexExt)
+    {
+      if(filename.endsWith("." + ext))
+      {
+        return ext;
+      }
+    }
+    
+    return null;
+  }
 }

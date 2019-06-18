@@ -11,6 +11,7 @@ import litresbot.Application;
 import litresbot.books.FileExtensions;
 import litresbot.flibusta.FlibustaClient;
 import litresbot.localisation.UserMessagesEn;
+import litresbot.util.Convert;
 import litresbot.util.Logger;
 
 
@@ -110,9 +111,27 @@ public class TelegramBotCommands
     if(normalCmd.startsWith("/read"))
     {
       bot.sendBusy(update);
-      String bookId = cmdArgument(cmd, "/read");
+      String readArgument = cmdArgument(cmd, "/read");
+      String bookId = detectBookFromReadArgument(readArgument);
       
-      SendMessageList reply = FlibustaClient.readBook(bookId);
+      if(bookId == null)
+      {
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorWrongBookId));
+        return;
+      }
+      
+      String readPositionString = readArgument.substring(bookId.length() + 1);
+      
+      Long readPosition = 0L;
+      try
+      {
+        readPosition = Convert.parseLong(readPositionString);
+      }
+      catch(Exception e)
+      { 
+      }
+      
+      SendMessageList reply = FlibustaClient.readBook(bookId, readPosition);
       bot.sendReply(update, reply);
       return;
     }
@@ -165,6 +184,19 @@ public class TelegramBotCommands
       bot.sendFile(update, doc);
       return;
     }
+  }
+
+  private static String detectBookFromReadArgument(String readArgument)
+  {
+    int posIndex = readArgument.indexOf("p");
+    
+    if(posIndex < 0)
+    {
+      return null;
+    }
+    
+    String bookId = readArgument.substring(0, posIndex);
+    return bookId;
   }
 
   public static void bookSearch(TelegramBot bot, Update update, String searchQuery)

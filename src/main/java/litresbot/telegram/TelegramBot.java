@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.api.methods.ActionType;
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage.SendMessageBuilder;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -43,12 +44,12 @@ public class TelegramBot extends TelegramLongPollingBot
       logger.warn("Could not sendReply");
       return;
     }
-    
+
     SendMessage message = new SendMessage();
-    /*SendMessage message = new SendMessage()
-            .setChatId(String.valueOf(chatMessage.getChatId()))
-            .setText(res)
-            .enableHtml(true);*/
+    message.setChatId(String.valueOf(chatMessage.getChatId()));
+    message.setText(res);
+    message.enableHtml(true);
+    
     try
     {
       execute(message);

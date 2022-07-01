@@ -69,15 +69,15 @@ public class UserMessagesRu implements UserMessages
   
   public String welcomeScreen()
   {
-    return "������� �������� ����� ��� ������.";
+    return "Введите название книги для поиска.";
   }
   
   public String helpScreen()
   {
     return 
-        "������ ��������� ������:\n" +
-        "/start - ������ ������ � �����.\n" +
-        "/help - ������� �� ������ � �����.\n" +
-        "/book - ����� �� �������� �����.";
+      "Список доступных команд:\n" +
+      "/start - начало работы с ботом.\n" +
+      "/help - справка по работе с ботом.\n" +
+      "/book - поиск по названию книги.";
   }
 }

@@ -1,25 +1,12 @@
 # Bot token
 botToken=
 
-# Telegram proxy settings
-telegramUseProxy=false
-telegramProxyHost=127.0.0.1
-telegramProxyPort=9050
-
+# Proxy settings
+useProxy=false
+proxyHost=127.0.0.1
+proxyPort=9050
 # set to http/socks4/socks5
-telegramProxyType=socks5
+proxyType=socks5
 
 # OPDS search service settings
 opdsFlibustaUrl=http://localhost:19001/api
-
-# OPDS search service proxy settings
-opdsSearchUseProxy=false
-opdsSearchProxyHost=127.0.0.1
-opdsSearchProxyPort=9050
-opdsSearchProxyType=socks5
-
-# Books downloader proxy settings
-booksUseProxy=false
-booksProxyHost=127.0.0.1
-booksProxyPort=9050
-booksProxyType=socks5

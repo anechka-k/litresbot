@@ -1,10 +1,10 @@
 package litresbot;
 
+import org.apache.log4j.Logger;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
-import org.apache.log4j.Logger;
 
 import litresbot.localisation.UserMessages;
 import litresbot.localisation.UserMessagesRu;
@@ -14,7 +14,6 @@ public class Application
 {
   public static final String packageName = Application.class.getPackage().getName();
   
-  //public static final String version = AppConstants.APP_VERSION;
   public static Boolean terminated = false;
   
   public static TelegramBotsApi telegram;
@@ -32,53 +31,49 @@ public class Application
     terminated = false;
 
     DefaultBotOptions botOptions = new DefaultBotOptions();
-
-    Boolean telegramUseProxy = AppProperties.getBooleanProperty("telegramUseProxy");
-    if(telegramUseProxy == null) {
-      logger.warn("telegramUseProxy is not defined. Falling back to default (false) setting");
-      telegramUseProxy = false;
-    }
-
     String botToken = AppProperties.getStringProperty("botToken");
     if(botToken == null) {
       logger.error("botToken is not defined. Unable to register bot.");
       return;
     }
     
-    if(telegramUseProxy)
+    Boolean useProxy = AppProperties.getBooleanProperty("useProxy");
+    if(useProxy == null) {
+      useProxy = false;
+    }
+
+    if(useProxy)
     {
-      String host = AppProperties.getStringProperty("telegramProxyHost");
-      Integer port = AppProperties.getIntProperty("telegramProxyPort");
-      String proxyType = AppProperties.getStringProperty("telegramProxyType");
+      String host = AppProperties.getStringProperty("proxyHost");
+      Integer port = AppProperties.getIntProperty("proxyPort");
+      String proxyType = AppProperties.getStringProperty("proxyType");
 
       if(host == null) {
-        logger.error("telegramProxyHost is not defined. Define it to proxy host or switch off the proxy.");
+        logger.error("proxyHost is not defined. Define it to proxy host or switch off the proxy.");
         return;
       }
 
       if(port == null) {
-        logger.error("telegramProxyPort is not defined. Define it to proxy port or switch off the proxy.");
+        logger.error("proxyPort is not defined. Define it to proxy port or switch off the proxy.");
         return;
       }
 
       if(proxyType == null) {
-        logger.error("telegramProxyType is not defined. Define it to proxy type (eg SOCKS5) or switch off the proxy.");
+        logger.error("proxyType is not defined. Define it to proxy type (eg SOCKS5) or switch off the proxy.");
         return;
       }
 
-      botOptions.setProxyHost(AppProperties.getStringProperty("telegramProxyHost"));
-      botOptions.setProxyPort(AppProperties.getIntProperty("telegramProxyPort"));
+      botOptions.setProxyHost(host);
+      botOptions.setProxyPort(port);
       // default SOCKS5
       botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
       
-      String proxyTypeString = AppProperties.getStringProperty("telegramProxyType");
-      
-      if(proxyTypeString.compareToIgnoreCase("http") == 0)
+      if(proxyType.compareToIgnoreCase("http") == 0)
       {
         botOptions.setProxyType(DefaultBotOptions.ProxyType.HTTP);
       }
       
-      if(proxyTypeString.compareToIgnoreCase("socks4") == 0)
+      if(proxyType.compareToIgnoreCase("socks4") == 0)
       {
         botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS4);
       } 

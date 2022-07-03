@@ -21,6 +21,18 @@ public class BookDownloader
   final static Logger logger = Logger.getLogger(BookDownloader.class);
 
   public static String folder = "./tmp";
+
+  public static void setDownloadPath(String path) {
+    File dir = new File(path);
+    logger.info("Setting book downloader folder to: " + dir.getAbsolutePath());
+    if (!dir.exists()) {
+      logger.info("Book downloader folder does not exist. Creating new folder.");
+      if (!dir.mkdirs()) {
+        logger.warn("Book downloader folder creating failed.");
+      }
+    }
+    BookDownloader.folder = path;
+  }
   
   public static byte[] download(String root, String bookUrl, String fileName) throws IOException
   {

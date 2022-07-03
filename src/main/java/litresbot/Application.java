@@ -6,6 +6,7 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import litresbot.books.BookDownloader;
 import litresbot.localisation.UserMessages;
 import litresbot.localisation.UserMessagesRu;
 import litresbot.telegram.TelegramBot;
@@ -78,6 +79,12 @@ public class Application
         botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS4);
       } 
     }
+
+    String flibustaDownloadPath = AppProperties.getStringProperty("flibustaDownloadPath");
+    if(flibustaDownloadPath == null) {
+      flibustaDownloadPath = "./tmp";
+    }
+    BookDownloader.setDownloadPath(flibustaDownloadPath);
 
     try {
       telegram = new TelegramBotsApi(DefaultBotSession.class);

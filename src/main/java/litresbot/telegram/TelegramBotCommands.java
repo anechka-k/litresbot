@@ -3,6 +3,7 @@ package litresbot.telegram;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.log4j.Logger;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
@@ -55,8 +56,8 @@ public class TelegramBotCommands
       return;
     }
     
-    logger.info("commandReceived: " + cmd + ", " + userName);
-    logger.info("user has language: " + languageCode);
+    logger.debug("commandReceived: " + StringEscapeUtils.escapeJava(cmd) + ", " + StringEscapeUtils.escapeJava(userName));
+    logger.debug("user has language: " + StringEscapeUtils.escapeJava(languageCode));
     
     String normalCmd = cmd;
     normalCmd = normalCmd.toLowerCase();

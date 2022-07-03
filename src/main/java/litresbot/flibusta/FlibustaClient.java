@@ -33,11 +33,6 @@ import litresbot.util.TelegramEscape;
 public class FlibustaClient
 {
   final static Logger logger = Logger.getLogger(FlibustaClient.class);
-
-  static
-  {
-    BookDownloader.folder = "./flibooks";
-  }
   
   private static HashMap<String, BookInfo> booksCache;
   static

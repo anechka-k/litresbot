@@ -2,7 +2,6 @@ package litresbot.flibusta;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +10,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.log4j.Logger;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.xml.sax.SAXException;
 
@@ -20,15 +20,12 @@ import com.kursx.parser.fb2.P;
 import com.kursx.parser.fb2.Section;
 import com.kursx.parser.fb2.Title;
 
-import litresbot.AppProperties;
 import litresbot.books.BookDownloader;
 import litresbot.books.BookFileLink;
 import litresbot.books.BookInfo;
 import litresbot.books.FileExtensions;
 import litresbot.books.plurals.PluralsText;
 import litresbot.books.plurals.PluralsTextEn;
-import litresbot.http.HttpClientWithProxy;
-import litresbot.http.HttpSourceType;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.telegram.SendMessageList;
 import litresbot.util.TelegramEscape;
@@ -53,24 +50,16 @@ public class FlibustaClient
     List<BookInfo> bookEntries = new ArrayList<BookInfo>();
     
     try
-    {
-      String encodedSearch = URLEncoder.encode(searchQuery, "UTF-8");
-      String opdsFlibustaUrl = AppProperties.getStringProperty("opdsFlibustaUrl");
-      String requestUrl = opdsFlibustaUrl + "?request=searchBook&query=" + encodedSearch;
-      
-      String postAnswer = HttpClientWithProxy.sendPostRequest(requestUrl, "", HttpSourceType.OPDS_SERVICE);
-      org.json.JSONObject requestResult = new org.json.JSONObject(postAnswer);
-      
-      String resultStatus = requestResult.getString("result");
-      
-      if(!resultStatus.contentEquals("ok"))
+    {      
+      JSONObject result = litresbot.opdssearch.flibusta.FlibustaClient.searchBooks(searchQuery);     
+      if(!result.getString("result").contentEquals("ok"))
       {
-        logger.warn("OPDS search results an error: " + requestResult.getString("error"));
+        logger.warn("OPDS search results an error: " + result.getString("error"));
         return bookEntries;
       }
       
-      org.json.JSONArray books = requestResult.getJSONArray("books");
-      String searchSite = requestResult.getString("site");
+      org.json.JSONArray books = result.getJSONArray("books");
+      String searchSite = result.getString("site");
       
       for(int i = 0; i < books.length(); i++)
       {

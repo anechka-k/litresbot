@@ -8,5 +8,8 @@ proxyPort=9050
 # set to http/socks4/socks5
 proxyType=socks5
 
-# OPDS search service settings
-opdsFlibustaUrl=http://localhost:19001/api
+# the host to access Flibusta
+flibustaHost=http://flibusta.is
+
+# where we store downloaded book files
+flibustaDownloadPath=./flibooks

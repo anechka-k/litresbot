@@ -15,7 +15,6 @@ import java.util.zip.ZipInputStream;
 import org.apache.log4j.Logger;
 
 import litresbot.http.HttpClientWithProxy;
-import litresbot.http.HttpSourceType;
 
 public class BookDownloader
 {
@@ -55,7 +54,7 @@ public class BookDownloader
     }
     
     String url = root + bookUrl;
-    InputStream bookData = HttpClientWithProxy.download(url, fileName, HttpSourceType.BOOKS);
+    InputStream bookData = HttpClientWithProxy.getDownloadStream(url);
     
     BufferedInputStream in = new BufferedInputStream(bookData);
     FileOutputStream fos = new FileOutputStream(folder + "/" + fileName);

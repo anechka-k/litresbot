@@ -19,6 +19,7 @@ import litresbot.http.HttpClientWithProxy;
 public class BookDownloader
 {
   final static Logger logger = Logger.getLogger(BookDownloader.class);
+  final static HttpClientWithProxy http = new HttpClientWithProxy();
 
   public static String folder = "./tmp";
 
@@ -66,7 +67,7 @@ public class BookDownloader
     }
     
     String url = root + bookUrl;
-    InputStream bookData = HttpClientWithProxy.getDownloadStream(url);
+    InputStream bookData = http.getDownloadStream(url);
     
     BufferedInputStream in = new BufferedInputStream(bookData);
     FileOutputStream fos = new FileOutputStream(folder + "/" + fileName);

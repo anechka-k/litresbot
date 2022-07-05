@@ -12,7 +12,9 @@ import litresbot.opdssearch.opds.Link;
 import litresbot.opdssearch.opds.Page;
 
 public class FlibustaCrawler
-{  
+{
+  static Crawler crawler = new Crawler();
+
   public static List<Entry> processBooks(List<Page> pages) throws IOException
   {
     List<Entry> entries = new ArrayList<Entry>();
@@ -52,7 +54,7 @@ public class FlibustaCrawler
   
   public static List<Page> downloadAuthorsSearch(String root, String search) throws IOException
   {
-    List<Page> pages = Crawler.downloadCatalogSearch(root, search);
+    List<Page> pages = crawler.downloadCatalog(root, "/opds" + search);
     List<Page> fullPages = new ArrayList<Page>();
     Set<String> processedEntries = new HashSet<String>();
       
@@ -67,7 +69,7 @@ public class FlibustaCrawler
           
         String authorBooksUrl = "/opds/author/" + authorId + "/alphabet";
           
-        List<Page> catalogPages = Crawler.downloadCatalog(root, authorBooksUrl);
+        List<Page> catalogPages = crawler.downloadCatalog(root, authorBooksUrl);
         fullPages.addAll(catalogPages);
         processedEntries.add(entry.id);
       }
@@ -78,7 +80,7 @@ public class FlibustaCrawler
   
   public static List<Page> downloadBooksSearch(String root, String search) throws IOException
   {
-    List<Page> pages = Crawler.downloadCatalogSearch(root, search);
+    List<Page> pages = crawler.downloadCatalog(root, "/opds" + search);
     return pages;
   }
 }

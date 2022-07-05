@@ -85,12 +85,24 @@ public class HttpClientWithProxy
     }
   }
 
-  public static String sendGetRequest(String url) throws IOException
+  public boolean useProxy;
+  public String proxyTypeString;
+  public String proxyHost;
+  public int proxyPort;
+
+  public HttpClientWithProxy() {
+    useProxy = AppProperties.getBooleanProperty("useProxy");
+    proxyTypeString = AppProperties.getStringProperty("proxyType");
+    proxyHost = AppProperties.getStringProperty("proxyHost");
+    proxyPort = AppProperties.getIntProperty("proxyPort");
+  }
+
+  public String sendGetRequest(String url) throws IOException
   {
     CloseableHttpClient httpclient = HttpClients.createDefault();
     HttpClientContext context = HttpClientContext.create();
     HttpGet request = new HttpGet(url);
-    request.setHeader("User-Agent", "PostmanRuntime/7.29.0");
+    request.setHeader("User-Agent", "LitresBot");
 
     boolean useProxy = AppProperties.getBooleanProperty("useProxy");
     String proxyTypeString = AppProperties.getStringProperty("proxyType");
@@ -138,21 +150,16 @@ public class HttpClientWithProxy
     }
   }
   
-  public static InputStream getDownloadStream(String url) throws IOException
+  public InputStream getDownloadStream(String url) throws IOException
   {
     HttpURLConnection httpUrlConnection = openRawConnection(url);
     return httpUrlConnection.getInputStream();
   }
   
-  private static HttpURLConnection openRawConnection(String url) throws IOException
+  private HttpURLConnection openRawConnection(String url) throws IOException
   {
     URL fullUrl = new URL(url);
     Proxy proxy = Proxy.NO_PROXY;
-    
-    boolean useProxy = AppProperties.getBooleanProperty("useProxy");
-    String proxyTypeString = AppProperties.getStringProperty("proxyType");
-    String proxyHost = AppProperties.getStringProperty("proxyHost");
-    int proxyPort = AppProperties.getIntProperty("proxyPort");
 
     if(useProxy)
     {

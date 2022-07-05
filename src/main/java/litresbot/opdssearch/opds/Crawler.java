@@ -12,10 +12,20 @@ import java.util.Set;
 import litresbot.http.HttpClientWithProxy;
 
 public class Crawler
-{  
-  public static Page downloadPage(String url) throws IOException
+{
+  public HttpClientWithProxy http;
+
+  public Crawler() {
+    http = new HttpClientWithProxy();
+  }
+
+  public Crawler(HttpClientWithProxy http_) {
+    http = http_;
+  }
+
+  public Page downloadPage(String url) throws IOException
   {
-    String reply = HttpClientWithProxy.sendGetRequest(url);
+    String reply = http.sendGetRequest(url);
       
     InputStream inputStream = new ByteArrayInputStream(reply.getBytes(Charset.forName("UTF-8")));
       
@@ -23,7 +33,7 @@ public class Crawler
     return page;
   }
   
-  public static List<Page> downloadCatalog(String root, String url) throws IOException
+  public List<Page> downloadCatalog(String root, String url) throws IOException
   {
     List<Page> pages = new ArrayList<Page>();
     Set<String> currentUrls = new HashSet<String>();
@@ -62,12 +72,6 @@ public class Crawler
       if(!found) break;
     }
     
-    return pages;
-  }
-  
-  public static List<Page> downloadCatalogSearch(String root, String search) throws IOException
-  {
-    List<Page> pages = downloadCatalog(root, "/opds" + search);
     return pages;
   }
 }

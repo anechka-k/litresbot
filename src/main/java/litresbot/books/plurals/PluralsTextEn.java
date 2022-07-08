@@ -6,7 +6,7 @@ public final class PluralsTextEn
 {  
   private PluralsTextEn() {} //never
     
-  public static String convert(String text, Long n)
+  public static String convert(String text, int n)
   {
     String resultText = text;
     PluralForm pluralForm = PluralForm.TWO;

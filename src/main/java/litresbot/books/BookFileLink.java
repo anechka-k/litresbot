@@ -7,7 +7,10 @@ public class BookFileLink
   public String href;
   public String format;
   
-  public BookFileLink()
-  {
+  public BookFileLink() { }
+
+  public BookFileLink(BookFileLink another) {
+    this.href = another.href;
+    this.format = another.format;
   }
 }

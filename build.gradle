@@ -24,6 +24,7 @@ dependencies {
   implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
   implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.15'
   implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+  implementation group: 'com.google.guava', name: 'guava', version: '10.0.1'
 
   // telegrambots dependency
   implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'

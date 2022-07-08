@@ -2,16 +2,12 @@ package litresbot.flibusta;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.log4j.Logger;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.xml.sax.SAXException;
 
 import com.kursx.parser.fb2.Body;
@@ -21,18 +17,19 @@ import com.kursx.parser.fb2.Section;
 import com.kursx.parser.fb2.Title;
 
 import litresbot.books.BookDownloader;
-import litresbot.books.BookFileLink;
 import litresbot.books.BookInfo;
 import litresbot.books.FileExtensions;
-import litresbot.books.plurals.PluralsText;
-import litresbot.books.plurals.PluralsTextEn;
 import litresbot.localisation.UserMessagesEn;
+import litresbot.opdssearch.flibusta.FlibustaOpdsClient;
+import litresbot.opdssearch.flibusta.OpdsSearchResult;
 import litresbot.telegram.SendMessageList;
+import litresbot.telegram.view.TelegramView;
 import litresbot.util.TelegramEscape;
 
 public class FlibustaClient
 {
   final static Logger logger = Logger.getLogger(FlibustaClient.class);
+  final static String defaultReadFormat = "fb2";
   
   private static HashMap<String, BookInfo> booksCache;
   static
@@ -40,236 +37,60 @@ public class FlibustaClient
     booksCache = new HashMap<String, BookInfo>();
   }
   
-  public static List<BookInfo> getOpdsBooks(String searchQuery) throws JSONException, IOException
+  public static SendMessageList getBooks(String searchQuery, int from, int size)
   {
-    List<BookInfo> bookEntries = new ArrayList<BookInfo>();
-    
-    try
-    {      
-      JSONObject result = litresbot.opdssearch.flibusta.FlibustaClient.searchBooks(searchQuery);     
-      if(!result.getString("result").contentEquals("ok"))
-      {
-        logger.warn("OPDS search results an error: " + result.getString("error"));
-        return bookEntries;
-      }
-      
-      org.json.JSONArray books = result.getJSONArray("books");
-      String searchSite = result.getString("site");
-      
-      for(int i = 0; i < books.length(); i++)
-      {
-        org.json.JSONObject book = books.getJSONObject(i);
-        
-        BookInfo bookInfo = new BookInfo();
-        bookInfo.author = book.getString("author");
-        bookInfo.title = book.getString("title");
-        bookInfo.id = book.getString("id");
-        bookInfo.site = searchSite;
-        
-        bookInfo.links = new ArrayList<BookFileLink>();
-        
-        org.json.JSONArray links = book.getJSONArray("links");
-        for(int j = 0; j < links.length(); j++)
-        {
-          org.json.JSONObject link = links.getJSONObject(j);
-          
-          BookFileLink bookFileLink = new BookFileLink();
-          bookFileLink.href = link.getString("href");
-          bookFileLink.format = link.getString("format");
-          
-          bookInfo.links.add(bookFileLink);
-        }
-        
-        bookEntries.add(bookInfo);
-      }
-    }
-    catch(Exception e)
-    {
-      logger.warn("Error while searching with OPDS service", e);
-      bookEntries = new ArrayList<BookInfo>();
-      return bookEntries;
-    }
-    
-    return bookEntries;
-  }
-  
-  public static SendMessageList getBooks(String searchQuery)
-  {
-    SendMessageList result = new SendMessageList(4096);
-    
+    OpdsSearchResult searchResult = new OpdsSearchResult();
     try
     {
-      List<BookInfo> bookEntries = getOpdsBooks(searchQuery);
-      
-      int booksCount = bookEntries.size();
-      
-      if(booksCount == 0)
-      {
-        result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
-        result.endTextPage();
-        return result;
-      }
-      
-      // create cache data to allow instant access by book id
-      for(BookInfo book : bookEntries)
-      {
-        booksCache.put(book.id, book);
-      }
-      
-      // generate the search result header - how much books found
-      
-      String bookText = litresbot.Application.userMessages.get(UserMessagesEn.bookText);
-      String booksText = PluralsTextEn.convert(bookText, (long) booksCount);
-      
-      if(litresbot.Application.userMessages.language().contentEquals("ru"))
-      {
-        booksText = PluralsText.convert(bookText, (long) booksCount);
-      }
-      
-      result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.searchFoundTotal) +
-          booksCount + " " + booksText + "\n\n");
-      result.endTextPage();
-      
-      // generate the search result body
-      
-      for(BookInfo book : bookEntries)
-      {
-        result.appendTextPage("<b>");
-        result.appendTextPage(book.title);
-        result.appendTextPage("</b>\n");
-            
-        if (book.author != null)
-        {
-          result.appendTextPage(" (");
-          result.appendTextPage(book.author);
-          result.appendTextPage(")\n");
-        }
-            
-        result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.searchGoto));
-        result.appendTextPage("/bookinfo");
-        result.appendTextPage(book.id);
-              
-        result.appendTextPage("\n\n");
-        result.endTextPage();
-      }
+      searchResult = FlibustaOpdsClient.searchBooks(searchQuery, from, size);
     }
     catch (Exception e)
     {
       logger.warn("Http request failed", e);
     }
-    
-    return result;
+
+    if(searchResult.found == 0) {
+      return TelegramView.bookInfoNotFound();
+    }
+      
+    // create cache data to allow instant access by book id
+    for(BookInfo book : searchResult.books) {
+      booksCache.put(book.id, book);
+    }
+
+    return TelegramView.bookSearchResult(searchResult.books, searchResult.found);
   }
   
-  public static SendMessageList getBookInfo(String bookId)
-  {
-    SendMessageList result = new SendMessageList(4096);
-    
+  public static SendMessageList chooseBookAction(String bookId)
+  {    
     BookInfo bookInfo = booksCache.get(bookId);
-    if(bookInfo == null)
-    {
-      result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
-      result.endTextPage();
-      return result;
-    }
-    
-    // generate the book info header
-    
-    result.appendTextPage("<b>");
-    result.appendTextPage(bookInfo.title);
-    result.appendTextPage("</b>\n");
-        
-    if (bookInfo.author != null)
-    {
-      result.appendTextPage(" (");
-      result.appendTextPage(bookInfo.author);
-      result.appendTextPage(")\n");
-    }
-    
-    result.endTextPage();
-    
-    // generate the book info download and read buttons
-    
-    List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
-    InlineKeyboardButton btn1 = new InlineKeyboardButton();
-    InlineKeyboardButton btn2 = new InlineKeyboardButton();
-    btn1.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchDownload));
-    btn1.setCallbackData("/format" + bookInfo.id);
-    btn2.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchRead));
-    btn2.setCallbackData("/read" + bookInfo.id + "p" + "0");
-    
-    buttonsRow.add(btn1);
-    buttonsRow.add(btn2);
-    
-    List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
-    buttons.add(buttonsRow);
-    result.appendButtons(buttons);
-    
-    return result;
+    if(bookInfo == null) return TelegramView.bookInfoNotFound();
+    return TelegramView.bookChooseAction(bookInfo);
   }
   
   public static SendMessageList chooseBookFormat(String bookId)
-  {
-    SendMessageList result = new SendMessageList(4096);
-    
+  {    
     BookInfo bookInfo = booksCache.get(bookId);
-    if(bookInfo == null)
-    {
-      result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.errorSearchNotFound));
-      result.endTextPage();
-      return result;
-    }
-    
-    // generate the book info header
-    
-    result.appendTextPage("<b>");
-    result.appendTextPage(bookInfo.title);
-    result.appendTextPage("</b>\n");
-        
-    if (bookInfo.author != null)
-    {
-      result.appendTextPage(" (");
-      result.appendTextPage(bookInfo.author);
-      result.appendTextPage(")\n");
-    }
-    
-    result.endTextPage();
-    
-    // generate keyboard with download formats
+    if(bookInfo == null) return TelegramView.bookInfoNotFound();
 
-    List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
-    
-    for(BookFileLink link : bookInfo.links)
-    {      
-      String formatType = FileExtensions.detectFormat(link.format);
-      
-      if(formatType == null) continue;
-
-      InlineKeyboardButton btn1 = new InlineKeyboardButton();
-      btn1.setText(formatType.toUpperCase());
-      btn1.setCallbackData("/download" + formatType.toLowerCase() + bookId);
-      buttonsRow.add(btn1);
-    }
-    
-    List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
-    buttons.add(buttonsRow);
-    result.appendButtons(buttons);
-    
-    return result;
+    BookInfo flibustaBookInfo = FileExtensions.stripZipFromExtensions(bookInfo);
+    return TelegramView.bookChooseFormat(flibustaBookInfo);
   }
 
   public static SendMessageList readBook(String bookId, Long position)
   {
-    String defaultFormat = "fb2";
     SendMessageList result = new SendMessageList(4096);
     
-    String root = getUrlRootFromBook(bookId);
+    BookInfo bookInfo = booksCache.get(bookId);
+    if(bookInfo == null) return null;
+
+    String root = bookInfo.site;
     if(root == null) return null;
     
-    String url = getUrlShortFromBook(bookId, defaultFormat);
+    String url = FileExtensions.getUrlShortFromBook(bookInfo, defaultReadFormat);
     if(url == null) return null;
     
-    String fileName = getFilenameFromBook(bookId, defaultFormat);
+    String fileName = FileExtensions.getFilenameFromBook(bookInfo, defaultReadFormat);
     if(fileName == null) return null;
     
     byte[] book = null;
@@ -376,79 +197,34 @@ public class FlibustaClient
     
     return result;
   }
-  
-  public static String getUrlFromBook(String bookId, String format)
-  {
-    String root = getUrlRootFromBook(bookId);
-    if(root == null) return null;
-    
-    String url = getUrlShortFromBook(bookId, format);
-    if(url == null) return null;
-    
-    return root + url;
-  }
-   
-  public static String getFilenameFromBook(String bookId, String format)
-  {
-    BookInfo bookInfo = booksCache.get(bookId);
-    if(bookInfo == null)
-    {
-      return bookId;
-    }
-    
-    for(BookFileLink link : bookInfo.links)
-    {
-      String linkFormat = FileExtensions.detectFormat(link.format);
-      if(linkFormat == null) continue;
-      if(!linkFormat.contentEquals(format)) continue;
-      
-      return bookId + "." + link.format;
-    }
-    
-    return bookId;
-  }
 
   public static byte[] downloadWithCache(String bookId, String format) throws IOException
   {
-    String root = getUrlRootFromBook(bookId);
+    BookInfo bookInfo = booksCache.get(bookId);
+    if(bookInfo == null) return null;
+
+    String root = bookInfo.site;
     if(root == null) return null;
     
-    String url = getUrlShortFromBook(bookId, format);
+    String url = FileExtensions.getUrlShortFromBook(bookInfo, format);
     if(url == null) return null;
     
-    String fileName = getFilenameFromBook(bookId, format);
+    String fileName = FileExtensions.getFilenameFromBook(bookInfo, format);
     if(fileName == null) return null;
     
     logger.info("Downloading book: " + url);
-    byte[] book = BookDownloader.downloadWithCache(root, url, fileName);
+    byte[] bookContent = BookDownloader.downloadWithCache(root, url, fileName);
     logger.info("Downloading book done: " + url);
     
-    return book;
+    return bookContent;
   }
-  
-  private static String getUrlRootFromBook(String bookId)
-  {    
-    BookInfo book = booksCache.get(bookId);  
-    if(book == null) return null;    
-    return book.site;
-  }
-  
-  private static String getUrlShortFromBook(String bookId, String format)
-  {    
-    BookInfo book = booksCache.get(bookId);  
-    if(book == null) return null;
-    
-    format = format.toLowerCase();
-    
-    for(BookFileLink link : book.links)
-    {
-      String linkFormat = FileExtensions.detectFormat(link.format);
-      if(linkFormat == null) continue;
-      if(!linkFormat.contentEquals(format)) continue;
-      
-      return link.href;
-    }
-    
-    return null;
+
+  public static String getDownloadFileName(String bookId, String format)
+  {
+    BookInfo bookInfo = booksCache.get(bookId);
+    if(bookInfo == null) return null;
+
+    String fileName = FileExtensions.getFilenameFromBook(bookInfo, format);
+    return fileName;
   }
 }

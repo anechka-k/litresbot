@@ -1,16 +1,31 @@
 package litresbot.localisation;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class UserMessagesRu implements UserMessages
 {
-  public static final String errorUnknown = "Неизвестная ошибка";
-  public static final String errorWrongBookId = "Неверный ID книги";
-  public static final String errorCouldNotDownloadFile = "Не получилось загрузить файл";
-  public static final String errorSearchNotFound = "Ничего не найдено";
-  public static final String searchFoundTotal = "Найдено: ";
-  public static final String bookText = "книга";
-  public static final String searchGoto = "Загрузить: ";
-  public static final String searchDownload = "Загрузить";
-  public static final String searchRead = "Читать";
+  public Map<String, String> translation = createMap();
+
+  private static Map<String, String> createMap() {
+    Map<String, String> map = new HashMap<String, String>();
+    map.put(UserMessagesEn.errorUnknown, "Неизвестная ошибка");
+    map.put(UserMessagesEn.errorWrongBookId, "Неверный ID книги");
+    map.put(UserMessagesEn.errorCouldNotDownloadFile, "Не получилось загрузить файл");
+    map.put(UserMessagesEn.errorSearchNotFound, "Ничего не найдено");
+    map.put(UserMessagesEn.searchFoundTotal, "Найдено: ");
+    map.put(UserMessagesEn.bookText, "книга");
+    map.put(UserMessagesEn.searchGoto, "Загрузить: ");
+    map.put(UserMessagesEn.searchDownload, "Загрузить");
+    map.put(UserMessagesEn.searchRead, "Читать");
+    map.put(UserMessagesEn.nextText, "Следующие");
+    map.put(UserMessagesEn.welcomeScreen, "Введите название книги для поиска.");
+    map.put(UserMessagesEn.helpCommands, "Список доступных команд:");
+    map.put(UserMessagesEn.helpStart, "начало работы с ботом");
+    map.put(UserMessagesEn.helpHelp, "справка по работе с ботом");
+    map.put(UserMessagesEn.helpBook, "поиск по названию книги");
+    return map;
+  }
   
   public String language()
   {
@@ -19,65 +34,6 @@ public class UserMessagesRu implements UserMessages
   
   public String get(String in)
   {
-    if(in.contentEquals(UserMessagesEn.errorUnknown))
-    {
-      return errorUnknown;
-    }
-    
-    if(in.contentEquals(UserMessagesEn.errorWrongBookId))
-    {
-      return errorWrongBookId;
-    }
-    
-    if(in.contentEquals(UserMessagesEn.errorCouldNotDownloadFile))
-    {
-      return errorCouldNotDownloadFile;
-    }
-    
-    if(in.contentEquals(UserMessagesEn.errorSearchNotFound))
-    {
-      return errorSearchNotFound;
-    }
-    
-    if(in.contentEquals(UserMessagesEn.searchFoundTotal))
-    {
-      return searchFoundTotal;
-    }
-    
-    if(in.contentEquals(UserMessagesEn.bookText))
-    {
-      return bookText;
-    }
-    
-    if(in.contentEquals(UserMessagesEn.searchGoto))
-    {
-      return searchGoto;
-    }
-    
-    if(in.contentEquals(UserMessagesEn.searchDownload))
-    {
-      return searchDownload;
-    }
-    
-    if(in.contentEquals(UserMessagesEn.searchRead))
-    {
-      return searchRead;
-    }
-    
-    return in;
-  }
-  
-  public String welcomeScreen()
-  {
-    return "Введите название книги для поиска.";
-  }
-  
-  public String helpScreen()
-  {
-    return 
-      "Список доступных команд:\n" +
-      "/start - начало работы с ботом.\n" +
-      "/help - справка по работе с ботом.\n" +
-      "/book - поиск по названию книги.";
+    return translation.get(in);
   }
 }

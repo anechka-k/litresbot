@@ -2,11 +2,11 @@ package litresbot.books.plurals;
 
 import litresbot.books.plurals.Plurals.PluralForm;
 
-public final class PluralsText
+public final class PluralsTextRu
 {  
-  private PluralsText() {} //never
+  private PluralsTextRu() {} //never
     
-  public static String convert(String text, Long n)
+  public static String convert(String text, int n)
   {
     String resultText = text;
     PluralForm pluralForm = Plurals.analyze(n);

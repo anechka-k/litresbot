@@ -11,6 +11,12 @@ public class UserMessagesEn implements UserMessages
   public static final String searchGoto = "Download: ";
   public static final String searchDownload = "Download";
   public static final String searchRead = "Read";
+  public static final String nextText = "Next";
+  public static final String welcomeScreen = "Type the book title for search.";
+  public static final String helpCommands = "Available commands:";
+  public static final String helpStart = "Start interacting with bot";
+  public static final String helpHelp = "Bot usage info (this screen)";
+  public static final String helpBook = "Search the book";
   
   public String language()
   {
@@ -20,19 +26,5 @@ public class UserMessagesEn implements UserMessages
   public String get(String in)
   {
     return in;
-  }
-  
-  public String welcomeScreen()
-  {
-    return "Type the book title for search.";
-  }
-  
-  public String helpScreen()
-  {
-    return 
-        "Available commands:\n" +
-        "/start - start interacting with bot.\n" +
-        "/help - bot usage info (this screen).\n" +
-        "/book - search the book.";
   }
 }

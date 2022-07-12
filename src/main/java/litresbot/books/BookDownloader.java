@@ -108,32 +108,23 @@ public class BookDownloader
     BookContentCache.addBook(bookUrl, book);
     return book;
   }
-  
-  public static byte[] downloadUnzipBook(String root, String bookUrl, String fileName) throws IOException
-  {
-    byte[] bookZip = downloadWithCache(root, bookUrl, fileName);
-    
-    if(bookZip == null)
+
+  public static byte[] unzipBook(byte[] content, String filename) throws IOException
+  {    
+    if(!filename.endsWith(".zip"))
     {
-      throw new IOException("Could not download book. URL: " + bookUrl);
+      throw new IOException("Not a zip archive. File: " + filename);
     }
     
-    // now unzip book in books folder
-    
-    if(!fileName.endsWith(".zip"))
-    {
-      throw new IOException("Not a zip archive. URL: " + bookUrl);
-    }
-    
-    String filenameStripped = fileName.replace(".zip", "");
+    String filenameStripped = filename.replace(".zip", "");
     String format = FileExtensions.detectExtension(filenameStripped);
     
     if(format == null)
     {
-      throw new IOException("Not supported format. URL: " + bookUrl);
+      throw new IOException("Not supported format. File: " + filename);
     }
     
-    ByteArrayInputStream fileStream = new ByteArrayInputStream(bookZip);
+    ByteArrayInputStream fileStream = new ByteArrayInputStream(content);
     ZipInputStream zis = new ZipInputStream(fileStream);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
       
@@ -153,7 +144,7 @@ public class BookDownloader
           
       if(zipEntry == null)
       {
-        throw new IOException("Book not found in zip archive. URL: " + bookUrl);
+        throw new IOException("Book not found in zip archive. File: " + filename);
       }
           
       byte[] buffer = new byte[1024];

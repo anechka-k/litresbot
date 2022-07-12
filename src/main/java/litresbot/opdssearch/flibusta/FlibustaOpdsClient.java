@@ -22,7 +22,7 @@ public class FlibustaOpdsClient
   private static final String authorSearch = "/search?searchType=authors&searchTerm=%s";
   private static final String bookSearch = "/search?searchType=books&searchTerm=%s";
   
-  public static OpdsSearchResult searchBooks(String searchQuery, int from, int size)
+  public static OpdsSearchResult searchBooks(String searchQuery)
   {
     String flibustaHost = AppProperties.getStringProperty("flibustaHost");
     if (flibustaHost == null || flibustaHost.length() == 0) {
@@ -31,9 +31,6 @@ public class FlibustaOpdsClient
 
     OpdsSearchResult result = new OpdsSearchResult();
     result.books = new ArrayList<BookInfo>();
-    result.found = 0;
-    result.from = from;
-    result.size = size;
 
     List<Entry> bookEntries = new ArrayList<Entry>();    
     try
@@ -45,20 +42,8 @@ public class FlibustaOpdsClient
       logger.warn("OPDS search results an error", e);
       return result;
     }
-
-    // empty books array if request is out of bounds
-    if (from > bookEntries.size()) {
-      return result;
-    }
-
-    if (from + size > bookEntries.size()) {
-      size = bookEntries.size() - from;
-    }
-
-    List<Entry> selected = bookEntries.subList(from, from + size);
-    result.found = bookEntries.size();
     
-    for(Entry e : selected)
+    for(Entry e : bookEntries)
     {
       BookInfo bookInfo = new BookInfo();
       bookInfo.links = new ArrayList<BookFileLink>();

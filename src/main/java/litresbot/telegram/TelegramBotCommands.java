@@ -10,8 +10,9 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import litresbot.Application;
-import litresbot.books.FileExtensions;
+import litresbot.books.DownloadedBook;
 import litresbot.flibusta.FlibustaClient;
+import litresbot.flibusta.FlibustaReader;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.telegram.view.TelegramView;
 
@@ -61,6 +62,7 @@ public class TelegramBotCommands
     
     String normalCmd = cmd;
     normalCmd = normalCmd.toLowerCase();
+    String[] args = normalCmd.split(" ");
     
     // default is search the book
     if (!cmd.startsWith("/"))
@@ -68,93 +70,108 @@ public class TelegramBotCommands
       bookSearch(bot, update, cmd);
       return;
     }
+
+    // special case for /bookinfo command encoding - it should not contain spaces
+    if (normalCmd.startsWith("/b_") && normalCmd.length() > "/b_".length()) {
+      args = new String[2];
+      args[0] = "/bookinfo";
+      args[1] = normalCmd.substring("/b_".length());
+    } else if (normalCmd.startsWith("/bookinfo") && normalCmd.length() > "/bookinfo".length()) {
+      args = new String[2];
+      args[0] = "/bookinfo";
+      args[1] = normalCmd.substring("/bookinfo".length());
+    }
     
-    if (normalCmd.startsWith("/start"))
+    String command = args[0];
+
+    if (command.contentEquals("/start"))
     {
       bot.sendBusy(update);
       bot.sendReply(update, TelegramView.welcomeScreen());
       return;
     }
     
-    if (normalCmd.startsWith("/help"))
+    if (command.contentEquals("/help"))
     {
       bot.sendBusy(update);
       bot.sendReply(update, TelegramView.helpScreen());
       return;
     }
     
-    if(normalCmd.startsWith("/book "))
+    if(command.contentEquals("/book"))
     {
-      String argument = cmdArgument(cmd, "/book ");
+      // take the rest of the command as an argument since it may contain spaces
+      String argument = cmd.substring("/book ".length()).trim();
       bookSearch(bot, update, argument);
       return;
     }
     
-    if(normalCmd.startsWith("/bookinfo"))
+    if(command.contentEquals("/bookinfo"))
     {
-      bot.sendBusy(update);
-      String bookId = cmdArgument(cmd, "/bookinfo");
-      
-      SendMessageList reply = FlibustaClient.chooseBookAction(bookId);      
-      bot.sendReply(update, reply);
-      return;
-    }
-    
-    if(normalCmd.startsWith("/format"))
-    {
-      bot.sendBusy(update);
-      String bookId = cmdArgument(cmd, "/format");
-      
-      SendMessageList reply = FlibustaClient.chooseBookFormat(bookId);
-      bot.sendReply(update, reply);
-      return;
-    }
-    
-    if(normalCmd.startsWith("/read"))
-    {
-      bot.sendBusy(update);
-      String readArgument = cmdArgument(cmd, "/read");
-      String bookId = detectBookFromReadArgument(readArgument);
-      
-      if(bookId == null)
-      {
-        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorWrongBookId));
+      // should contain book id as an argument
+      if (args.length < 2) {
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorBadCommand));
         return;
       }
-      
-      String readPositionString = readArgument.substring(bookId.length() + 1);
-      
+
+      bot.sendBusy(update);
+      SendMessageList reply = FlibustaClient.chooseBookAction(args[1]);      
+      bot.sendReply(update, reply);
+      return;
+    }
+    
+    if(command.contentEquals("/format"))
+    {
+      // should contain book id as an argument
+      if (args.length < 2) {
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorBadCommand));
+        return;
+      }
+
+      bot.sendBusy(update);
+      SendMessageList reply = FlibustaClient.chooseBookFormat(args[1]);
+      bot.sendReply(update, reply);
+      return;
+    }
+    
+    if(command.contentEquals("/read"))
+    {
+      // should contain book id as an argument and optional read position
+      if (args.length < 2) {
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorBadCommand));
+        return;
+      }
+
+      bot.sendBusy(update);
+      String bookId = args[1];
       Long readPosition = 0L;
-      try
-      {
-        readPosition = Long.parseLong(readPositionString);
-      }
-      catch(Exception e)
-      { 
+
+      if (args.length > 2) {
+        String readPositionString = args[2];
+        try {
+          readPosition = Long.parseLong(readPositionString);
+        } catch(Exception e) { }
       }
       
-      SendMessageList reply = FlibustaClient.readBook(bookId, readPosition);
+      SendMessageList reply = FlibustaReader.readBook(bookId, readPosition);
       bot.sendReply(update, reply);
       return;
     }
     
-    if(normalCmd.startsWith("/download"))
+    if(command.contentEquals("/download"))
     {
-      bot.sendBusy(update);
-      
-      // bookFileId is not a bookId. bookFileId is an id of the URL to download e-book file
-      String downloadArguments = cmdArgument(cmd, "/download");
-      String downloadFormat = FileExtensions.detectFormat(downloadArguments);
-      
-      if(downloadFormat == null)
-      {
-        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorWrongBookId));
+      // should contain book id and download format
+      if (args.length < 3) {
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorBadCommand));
         return;
       }
+
+      bot.sendBusy(update);
+
+      String downloadFormat = args[1];
+      String bookId = args[2];
       
-      String bookId = downloadArguments.substring(downloadFormat.length());
-      
-      byte[] book = null;
+      DownloadedBook book = null;
       try
       {
         book = FlibustaClient.downloadWithCache(bookId, downloadFormat);
@@ -170,62 +187,61 @@ public class TelegramBotCommands
         return;
       }
       
-      ByteArrayInputStream fileStream = new ByteArrayInputStream(book);
-      
-      String fileName = FlibustaClient.getDownloadFileName(bookId, downloadFormat);
-      
-      if(fileName == null)
+      if(book.filename == null)
       {
         bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorWrongBookId));
         return;
       }
       
-      InputFile fileMedia = new InputFile(fileStream, fileName);
+      ByteArrayInputStream fileStream = new ByteArrayInputStream(book.content);
+      InputFile fileMedia = new InputFile(fileStream, book.filename);
       SendDocument doc = new SendDocument();
       doc.setDocument(fileMedia);
       bot.sendFile(update, doc);
       return;
     }
 
-    if(normalCmd.startsWith("/searchnext "))
+    if(command.contentEquals("/next"))
     {
-      String argument = cmdArgument(cmd, "/searchnext ");
-      bookSearchNext(bot, update, argument);
+      // should contain search id and optional current page
+      if (args.length < 2) {
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorBadCommand));
+        return;
+      }
+
+      Integer searchId = null;
+      try {
+        searchId = Integer.parseInt(args[1]);
+      } catch(NumberFormatException e) {
+        bot.sendReply(update, Application.userMessages.get(UserMessagesEn.errorBadCommand));
+        return;
+      }
+
+      int from = 0;
+
+      if (args.length > 2) {
+        String fromString = args[2];
+        try {
+          from = Integer.parseInt(fromString);
+        } catch(Exception e) { }
+      }
+
+      bookSearchNext(bot, update, searchId, from);
       return;
     }
-  }
-
-  private static String detectBookFromReadArgument(String readArgument)
-  {
-    int posIndex = readArgument.indexOf("p");
-    
-    if(posIndex < 0)
-    {
-      return null;
-    }
-    
-    String bookId = readArgument.substring(0, posIndex);
-    return bookId;
   }
 
   private static void bookSearch(TelegramBot bot, Update update, String searchQuery)
   {
     bot.sendBusy(update);    
-    SendMessageList reply = FlibustaClient.getBooks(searchQuery, 0, 10);      
+    SendMessageList reply = FlibustaClient.getBooks(searchQuery, 10);      
     bot.sendReply(update, reply);
   }
 
-  private static void bookSearchNext(TelegramBot bot, Update update, String searchQuery)
+  private static void bookSearchNext(TelegramBot bot, Update update, int searchId, int currentPage)
   {
-    bot.sendBusy(update);    
-    String[] args = searchQuery.split(" ");
-    int from = Integer.parseInt(args[1]);
-    SendMessageList reply = FlibustaClient.getBooks(args[0], from, 10);
+    bot.sendBusy(update);
+    SendMessageList reply = FlibustaClient.getBooksById(searchId, currentPage, 10);
     bot.sendReply(update, reply);
-  }
-
-  private static String cmdArgument(String cmd, String prefix)
-  {    
-    return cmd.substring(prefix.length()).trim();
   }
 }

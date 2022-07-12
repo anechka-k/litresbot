@@ -12,13 +12,17 @@ public class UserMessagesRu implements UserMessages
     map.put(UserMessagesEn.errorUnknown, "Неизвестная ошибка");
     map.put(UserMessagesEn.errorWrongBookId, "Неверный ID книги");
     map.put(UserMessagesEn.errorCouldNotDownloadFile, "Не получилось загрузить файл");
+    map.put(UserMessagesEn.errorBadCommand, "Неверная команда");
     map.put(UserMessagesEn.errorSearchNotFound, "Ничего не найдено");
     map.put(UserMessagesEn.searchFoundTotal, "Найдено: ");
     map.put(UserMessagesEn.bookText, "книга");
     map.put(UserMessagesEn.searchGoto, "Загрузить: ");
     map.put(UserMessagesEn.searchDownload, "Загрузить");
     map.put(UserMessagesEn.searchRead, "Читать");
-    map.put(UserMessagesEn.nextText, "Следующие");
+    map.put(UserMessagesEn.previousText, "Назад");
+    map.put(UserMessagesEn.nextText, "Дальше");
+    map.put(UserMessagesEn.beginText, "Начало");
+    map.put(UserMessagesEn.endText, "Конец");
     map.put(UserMessagesEn.welcomeScreen, "Введите название книги для поиска.");
     map.put(UserMessagesEn.helpCommands, "Список доступных команд:");
     map.put(UserMessagesEn.helpStart, "начало работы с ботом");

@@ -51,10 +51,7 @@ public class FlibustaOpdsClient
       bookInfo.author = e.author;
       bookInfo.id = e.id;
       bookInfo.site = flibustaHost;
-      String[] annotationParts = e.annotation.split("<br/>");
-      if (annotationParts.length > 0 && annotationParts[0].length() > 0) {
-        bookInfo.annotation = annotationParts[0];
-      }
+      bookInfo.annotation = e.annotation;
 
       for(Link l : e.links)
       {

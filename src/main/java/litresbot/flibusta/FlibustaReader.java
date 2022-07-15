@@ -15,7 +15,7 @@ import com.kursx.parser.fb2.P;
 import com.kursx.parser.fb2.Section;
 import com.kursx.parser.fb2.Title;
 
-import litresbot.books.BookDownloader;
+import litresbot.books.BookInfo;
 import litresbot.books.DownloadedBook;
 import litresbot.telegram.SendMessageList;
 import litresbot.telegram.view.TelegramView;
@@ -24,33 +24,33 @@ public class FlibustaReader
 {
   final static Logger logger = Logger.getLogger(FlibustaReader.class);
   final static String defaultReadFormat = "fb2";
+  // 100 symbols on page
+  ///TODO: make it a property
+  final static int pageSize = 100;
 
-  public static SendMessageList readBook(String bookId, Long position)
+  public static SendMessageList readBook(BookInfo bookInfo, Long position)
   {
-    byte[] bookContent = null;
+    DownloadedBook book = null;
     try
     {
-      ///TODO: try to find unzipped book and continue reading
-
-      DownloadedBook book = FlibustaClient.downloadWithCache(bookId, defaultReadFormat);
-      bookContent = BookDownloader.unzipBook(book.content, book.filename);
+      book = FlibustaDownloader.downloadAndUnzip(bookInfo, defaultReadFormat);
     }
     catch(IOException e)
     {
-      logger.warn("Book unzip failed", e);
+      logger.warn("Book download for reading failed", e);
     }
     
-    if(bookContent == null) return TelegramView.bookCouldNotDownload();
+    if(book == null || book.content == null) return TelegramView.bookCouldNotDownload();
     
     // now we have a book content in byte array
     // let's read it
     
-    ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bookContent);
+    ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(book.content);
     
     try
     {      
       FictionBook fb2 = new FictionBook(byteArrayInputStream);
-      return readBookPage(fb2, position, 10);
+      return readBookPage(fb2, position, pageSize);
     }
     catch(IOException e)
     {
@@ -90,6 +90,8 @@ public class FlibustaReader
           for(P paragraph : titleParagraphs)
           {
             String line = paragraph.getText();
+            ///TODO: split paragraph to words and do not break in the middle of the word
+            ///TODO: unless it is way too long
             collectedSize += line.length();
             skipSize += line.length();
 
@@ -125,6 +127,9 @@ public class FlibustaReader
         }
       }
     }
+
+    ///TODO: add read next button
+    ///TODO: add page numbers
 
     return result;
   }

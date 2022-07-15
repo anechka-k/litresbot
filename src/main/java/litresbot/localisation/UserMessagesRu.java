@@ -9,6 +9,11 @@ public class UserMessagesRu implements UserMessages
 
   private static Map<String, String> createMap() {
     Map<String, String> map = new HashMap<String, String>();
+    map.put(UserMessagesEn.welcomeScreen, "Введите название книги для поиска.");
+    map.put(UserMessagesEn.helpCommands, "Список доступных команд:");
+    map.put(UserMessagesEn.helpStart, "начало работы с ботом");
+    map.put(UserMessagesEn.helpHelp, "справка по работе с ботом");
+    map.put(UserMessagesEn.helpBook, "поиск по названию книги");
     map.put(UserMessagesEn.errorUnknown, "Неизвестная ошибка");
     map.put(UserMessagesEn.errorWrongBookId, "Неверный ID книги");
     map.put(UserMessagesEn.errorCouldNotDownloadFile, "Не получилось загрузить файл");
@@ -23,11 +28,7 @@ public class UserMessagesRu implements UserMessages
     map.put(UserMessagesEn.nextText, "Дальше");
     map.put(UserMessagesEn.beginText, "Начало");
     map.put(UserMessagesEn.endText, "Конец");
-    map.put(UserMessagesEn.welcomeScreen, "Введите название книги для поиска.");
-    map.put(UserMessagesEn.helpCommands, "Список доступных команд:");
-    map.put(UserMessagesEn.helpStart, "начало работы с ботом");
-    map.put(UserMessagesEn.helpHelp, "справка по работе с ботом");
-    map.put(UserMessagesEn.helpBook, "поиск по названию книги");
+    map.put(UserMessagesEn.annotationEmpty, "Нет аннотации");
     return map;
   }
   

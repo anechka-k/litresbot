@@ -37,35 +37,12 @@ public class BookDownloader
   
   public static byte[] download(String root, String bookUrl, String fileName) throws IOException
   {
-    byte[] book = null;
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    
-    File file = new File(folder + "/" + fileName);
-    if(file.exists() && file.canRead())
-    {
+    byte[] book = getBookContent(fileName);
+    if (book != null) {
       logger.info("book " + bookUrl + " found in files");
-      FileInputStream fis = new FileInputStream(file);
-      BufferedInputStream bufferedInputStream = new BufferedInputStream(fis);
-      
-      byte data[] = new byte[1024];
-      int read;
-      
-      try
-      {
-        while((read = bufferedInputStream.read(data, 0, 1024)) >= 0)
-        {
-          baos.write(data, 0, read);
-        }
-      }
-      finally
-      {
-        fis.close();
-      }
-      
-      book = baos.toByteArray();
       return book;
     }
-    
+
     String url = root + bookUrl;
     InputStream bookData = http.getDownloadStream(url);
     
@@ -75,7 +52,7 @@ public class BookDownloader
     
     byte data[] = new byte[1024];
     int read;
-    
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try
     {
       while((read = in.read(data, 0, 1024)) >= 0)
@@ -94,23 +71,58 @@ public class BookDownloader
     return book;
   }
   
-  public static byte[] downloadWithCache(String root, String bookUrl, String fileName) throws IOException
+  public static byte[] downloadAndUnzip(String root, String bookUrl, String fileName) throws IOException
   {
-    byte[] book = BookContentCache.getBookFromId(bookUrl);
-    if(book != null)
-    {
-      logger.info("book " + bookUrl + " found in cache");
-      return book;
+    byte[] bookContent = getUnzippedBook(fileName);
+    if (bookContent != null) {
+      logger.info("book " + bookUrl + " found in unzipped files");
+      return bookContent;
     }
     
-    book = download(root, bookUrl, fileName);
-    
-    BookContentCache.addBook(bookUrl, book);
+    // try to download if not found in unzipped files
+    byte[] zipContent = download(root, bookUrl, fileName);
+    return unzipBook(zipContent, fileName);
+  }
+
+  private static byte[] getBookContent(String filename) throws IOException
+  {
+    File file = new File(folder + "/" + filename);
+
+    if(!file.exists()) return null;
+    if(!file.canRead()) return null;
+
+    FileInputStream fis = new FileInputStream(file);
+    BufferedInputStream bufferedInputStream = new BufferedInputStream(fis);
+      
+    byte data[] = new byte[1024];
+    int read;
+
+    byte[] book = null;
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try {
+      while((read = bufferedInputStream.read(data, 0, 1024)) >= 0) {
+        baos.write(data, 0, read);
+      }
+    } finally {
+      fis.close();
+    }
+      
+    book = baos.toByteArray();
     return book;
   }
 
-  public static byte[] unzipBook(byte[] content, String filename) throws IOException
-  {    
+  private static byte[] getUnzippedBook(String filename) throws IOException
+  {
+    if(!filename.endsWith(".zip")) {
+      throw new IOException("Not a zip archive. File: " + filename);
+    }
+
+    String filenameStripped = filename.replace(".zip", "");
+    return getBookContent(filenameStripped);
+  }
+
+  private static byte[] unzipBook(byte[] content, String filename) throws IOException
+  {
     if(!filename.endsWith(".zip"))
     {
       throw new IOException("Not a zip archive. File: " + filename);

@@ -12,7 +12,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import litresbot.Application;
 import litresbot.books.DownloadedBook;
 import litresbot.flibusta.FlibustaClient;
-import litresbot.flibusta.FlibustaReader;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.telegram.view.TelegramView;
 
@@ -153,7 +152,7 @@ public class TelegramBotCommands
         } catch(Exception e) { }
       }
       
-      SendMessageList reply = FlibustaReader.readBook(bookId, readPosition);
+      SendMessageList reply = FlibustaClient.readBook(bookId, readPosition);
       bot.sendReply(update, reply);
       return;
     }
@@ -174,7 +173,7 @@ public class TelegramBotCommands
       DownloadedBook book = null;
       try
       {
-        book = FlibustaClient.downloadWithCache(bookId, downloadFormat);
+        book = FlibustaClient.download(bookId, downloadFormat);
       }
       catch (IOException e)
       {

@@ -1,15 +1,16 @@
 package litresbot.flibusta;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import litresbot.books.BookDownloader;
 import litresbot.books.BookInfo;
 import litresbot.books.DownloadedBook;
 import litresbot.books.FileExtensions;
+import litresbot.localisation.UserMessagesEn;
 import litresbot.opdssearch.flibusta.FlibustaOpdsClient;
 import litresbot.opdssearch.flibusta.OpdsSearchResult;
 import litresbot.telegram.SendMessageList;
@@ -104,7 +105,27 @@ public class FlibustaClient
     BookInfo bookInfo = booksCache.get(bookId);
     if(bookInfo == null) return TelegramView.bookInfoNotFound();
     BookInfo bookInfoFilteredAnnotation = new BookInfo(bookInfo);
-    bookInfoFilteredAnnotation.annotation = TelegramFilterHtml.filterText(bookInfoFilteredAnnotation.annotation);
+    String[] sections = bookInfoFilteredAnnotation.annotation.split("<br ?/?>");
+
+    // search for format section in the book annotation. It starts with "Формат: "
+    int formatSection = -1;
+    for (int i = 0; i < sections.length; i++) {
+      String s = sections[i];
+      if (s.toLowerCase().startsWith("формат: ")) {
+        formatSection = i;
+        break;
+      }
+    }
+
+    // keep only annotation or show "empty annotation" text
+    if (formatSection == 0) {
+      bookInfoFilteredAnnotation.annotation = litresbot.Application.userMessages.get(UserMessagesEn.annotationEmpty);
+    } else {
+      String[] annotationSections = Arrays.copyOf(sections, formatSection > 0 ? formatSection : sections.length);
+      String annotation = String.join("\n", annotationSections);
+      bookInfoFilteredAnnotation.annotation = TelegramFilterHtml.filterText(annotation);
+    }
+
     return TelegramView.bookChooseAction(bookInfoFilteredAnnotation);
   }
   
@@ -117,24 +138,19 @@ public class FlibustaClient
     return TelegramView.bookChooseFormat(flibustaBookInfo);
   }
 
-  public static DownloadedBook downloadWithCache(String bookId, String format) throws IOException
+  public static DownloadedBook download(String bookId, String format) throws IOException
   {
     BookInfo bookInfo = booksCache.get(bookId);
     if(bookInfo == null) return null;
 
-    String root = bookInfo.site;
-    if(root == null) return null;
-    
-    String url = FileExtensions.getUrlShortFromBook(bookInfo, format);
-    if(url == null) return null;
-    
-    DownloadedBook book = new DownloadedBook();
-    book.filename = FileExtensions.getFilenameFromBook(bookInfo, format);
-    if(book.filename == null) return null;
-    
-    logger.info("Downloading book: " + url);
-    book.content = BookDownloader.downloadWithCache(root, url, book.filename);
-    logger.info("Downloading book done: " + url);
-    return book;
+    return FlibustaDownloader.download(bookInfo, format);
+  }
+
+  public static SendMessageList readBook(String bookId, Long position)
+  {
+    BookInfo bookInfo = booksCache.get(bookId);
+    if(bookInfo == null) return null;
+
+    return FlibustaReader.readBook(bookInfo, position);
   }
 }

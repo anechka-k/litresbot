@@ -44,6 +44,13 @@ public class Link
 
   public Link() { }
 
+  public Link(Link another) {
+    this.href = another.href;
+    this.type = another.type;
+    this.title = another.title;
+    this.rel = another.rel;
+  }
+
   @Override
   public String toString()
   {

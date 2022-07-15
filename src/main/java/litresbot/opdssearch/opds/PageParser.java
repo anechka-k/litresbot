@@ -80,6 +80,11 @@ public class PageParser
           {
             entry.id = id.getText();
           }
+          Element content = element.getChild("content", element.getNamespace());
+          if (content != null)
+          {
+            entry.annotation = content.getText();
+          }
           List<Element> _links = element.getChildren("link", element.getNamespace());
           _links.stream().forEach(link ->
           {

@@ -43,7 +43,7 @@ public class FlibustaCrawler
         String entryId = entry.id;
         entryId = entryId.replace("tag:book:", "");
           
-        Entry newEntry = new Entry(entry.updated, entryId, entry.title, entry.author);
+        Entry newEntry = new Entry(entry.updated, entryId, entry.title, entry.author, entry.annotation);
         newEntry.links = currentLinks;
         entries.add(newEntry);
       }

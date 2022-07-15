@@ -233,7 +233,8 @@ public class TelegramBotCommands
 
   private static void bookSearch(TelegramBot bot, Update update, String searchQuery)
   {
-    bot.sendBusy(update);    
+    bot.sendBusy(update);
+    ///TODO: extract page size to AppConstants or AppProperties
     SendMessageList reply = FlibustaClient.getBooks(searchQuery, 10);      
     bot.sendReply(update, reply);
   }

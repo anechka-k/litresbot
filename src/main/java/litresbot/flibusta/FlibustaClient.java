@@ -13,6 +13,7 @@ import litresbot.books.FileExtensions;
 import litresbot.opdssearch.flibusta.FlibustaOpdsClient;
 import litresbot.opdssearch.flibusta.OpdsSearchResult;
 import litresbot.telegram.SendMessageList;
+import litresbot.telegram.TelegramFilterHtml;
 import litresbot.telegram.view.TelegramView;
 
 public class FlibustaClient
@@ -102,7 +103,9 @@ public class FlibustaClient
   {    
     BookInfo bookInfo = booksCache.get(bookId);
     if(bookInfo == null) return TelegramView.bookInfoNotFound();
-    return TelegramView.bookChooseAction(bookInfo);
+    BookInfo bookInfoFilteredAnnotation = new BookInfo(bookInfo);
+    bookInfoFilteredAnnotation.annotation = TelegramFilterHtml.filterText(bookInfoFilteredAnnotation.annotation);
+    return TelegramView.bookChooseAction(bookInfoFilteredAnnotation);
   }
   
   public static SendMessageList chooseBookFormat(String bookId)

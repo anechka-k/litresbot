@@ -11,6 +11,7 @@ public class BookInfo
   public String title;
   public String author;
   public String site;
+  public String annotation;
   
   public List<BookFileLink> links;
   
@@ -21,6 +22,7 @@ public class BookInfo
     this.title = another.title;
     this.author = another.author;
     this.site = another.site;
+    this.annotation = another.annotation;
     if (another.links != null) {
       // make a deep copy of the links
       this.links = new ArrayList<BookFileLink>(another.links.size());

@@ -12,7 +12,7 @@ import litresbot.books.plurals.PluralsTextRu;
 import litresbot.books.plurals.PluralsTextEn;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.telegram.SendMessageList;
-import litresbot.util.TelegramEscape;
+import litresbot.telegram.TelegramEscape;
 
 public class TelegramView
 {
@@ -97,6 +97,12 @@ public class TelegramView
       result.appendTextPage(book.author);
       result.appendTextPage(")\n");
     }
+
+    if (book.annotation != null) {
+      result.appendTextPage("\n");
+      result.appendTextPage(book.annotation);
+      result.appendTextPage("\n");
+    }
     
     result.endTextPage();
     
@@ -146,7 +152,7 @@ public class TelegramView
     for(BookInfo book : books)
     {
       bookNumber++;
-      
+
       result.appendTextPage("<b>");
       result.appendTextPage("" + bookNumber + ". " + book.title);
       result.appendTextPage("</b>\n");

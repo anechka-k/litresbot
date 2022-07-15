@@ -1,4 +1,4 @@
-package litresbot.util;
+package litresbot.telegram;
 
 public class TelegramEscape
 {

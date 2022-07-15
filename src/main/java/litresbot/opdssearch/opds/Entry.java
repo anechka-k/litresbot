@@ -36,17 +36,34 @@ public class Entry
   public String id;
   public String title;
   public String author;
+  public String annotation;
   public List<Link> links = new ArrayList<>();
 
-  public Entry(String updated, String id, String title, String author)
+  public Entry(String updated, String id, String title, String author, String annotation)
   {
     this.updated = updated;
     this.id = id;
     this.title = title;
     this.author = author;
+    this.annotation = annotation;
   }
 
   public Entry() { }
+
+  public Entry(Entry another) {
+    this.updated = another.updated;
+    this.id = another.id;
+    this.title = another.title;
+    this.author = another.author;
+    this.annotation = another.annotation;
+    if (another.links != null) {
+      // make a deep copy of the links
+      this.links = new ArrayList<Link>(another.links.size());
+      for (Link l : another.links) {
+        this.links.add(new Link(l));
+      }
+    }
+  }
 
   @Override
   public String toString()

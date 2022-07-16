@@ -7,13 +7,14 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class P extends Element {
 
-    protected ArrayList<Image> images;
-    protected ArrayList<Emphasis> emphasis;
-    protected ArrayList<Strong> strong;
-    protected ArrayList<StrikeThrough> strikeThrough;
+    protected List<Image> images;
+    protected List<Emphasis> emphasis;
+    protected List<Strong> strong;
+    protected List<StrikeThrough> strikeThrough;
 //    TODO
 //    Для нижних индексов <sub>, а для верхних индексов <sup>
 //    Программный код - <code>
@@ -70,7 +71,19 @@ public class P extends Element {
         super(p);
     }
 
-    public ArrayList<Image> getImages() {
+    public List<Image> getImages() {
         return images;
+    }
+
+    public List<Emphasis> getEmphasis() {
+      return emphasis;
+    }
+
+    public List<Strong> getStrong() {
+      return strong;
+    }
+
+    public List<StrikeThrough> getStrikeThrough() {
+      return strikeThrough;
     }
 }

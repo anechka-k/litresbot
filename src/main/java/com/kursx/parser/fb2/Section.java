@@ -13,7 +13,7 @@ public class Section extends IdElement {
     protected Annotation annotation;
     protected ArrayList<Epigraph> epigraphs;
     protected ArrayList<Section> sections;
-    protected ArrayList<P> paragraphs;
+    protected ArrayList<P> paragraphs = new ArrayList<>();
     protected ArrayList<Element> elements;
     protected Title title;
 
@@ -53,7 +53,6 @@ public class Section extends IdElement {
                     elements.add(new Subtitle(node));
                     break;
                 case "p":
-                    if (paragraphs == null) paragraphs = new ArrayList<>();
                     paragraphs.add(new P(node));
                     break;
                 case "empty-line":

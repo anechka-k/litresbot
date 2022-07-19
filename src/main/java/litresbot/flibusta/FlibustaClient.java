@@ -66,7 +66,7 @@ public class FlibustaClient
       nextPage = "/next " + searchId + " " + pageSize;
     }
 
-    return TelegramView.bookSearchResult(firstPageBooks, searchId, 0, pageSize, found, null, nextPage);
+    return TelegramView.bookSearchResult(firstPageBooks, searchId, 0, pageSize, found, nextPage);
   }
 
   public static SendMessageList getBooksById(int searchId, int from, int pageSize)
@@ -83,21 +83,13 @@ public class FlibustaClient
     }
     List<BookInfo> thisPageBooks = searchResult.books;
 
-    String prevPage = null;
-    if (from > 0) {
-      int newFrom = 0;
-      if (from - pageSize > 0) newFrom = from - pageSize;
-      thisPageBooks = thisPageBooks.subList(from, thisPageBooks.size());
-      prevPage = "/next " + searchId + " " + newFrom;
-    }
-
     String nextPage = null;
     if (from + pageSize < found) {
       thisPageBooks = thisPageBooks.subList(0, pageSize);
       nextPage = "/next " + searchId + " " + (from + pageSize);
     }
 
-    return TelegramView.bookSearchResult(thisPageBooks, searchId, from, pageSize, found, prevPage, nextPage);
+    return TelegramView.bookSearchResult(thisPageBooks, searchId, from, pageSize, found, nextPage);
   }
   
   public static SendMessageList chooseBookAction(String bookId)
@@ -146,11 +138,11 @@ public class FlibustaClient
     return FlibustaDownloader.download(bookInfo, format);
   }
 
-  public static SendMessageList readBook(String bookId, Long position)
+  public static SendMessageList readBook(String bookId, Long paragraph, Long position)
   {
     BookInfo bookInfo = booksCache.get(bookId);
     if(bookInfo == null) return null;
 
-    return FlibustaReader.readBook(bookInfo, position);
+    return FlibustaReader.readBook(bookInfo, paragraph, position);
   }
 }

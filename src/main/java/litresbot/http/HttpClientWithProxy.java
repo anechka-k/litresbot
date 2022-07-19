@@ -125,8 +125,12 @@ public class HttpClientWithProxy
         InetSocketAddress socksaddr = new InetSocketAddress(proxyHost, proxyPort);
         context.setAttribute("socks.address", socksaddr);
 
+        // set 2 minutes timeout
+        RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(120 * 1000).build();
+
         httpclient = HttpClients.custom()
           .setConnectionManager(cm)
+          .setDefaultRequestConfig(requestConfig)
           .build();
       } else {
         throw new IOException("Unsupported proxy type: " + proxyTypeString);

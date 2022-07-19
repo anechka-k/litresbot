@@ -143,16 +143,24 @@ public class TelegramBotCommands
 
       bot.sendBusy(update);
       String bookId = args[1];
+      Long readParagraph = 0L;
       Long readPosition = 0L;
 
       if (args.length > 2) {
-        String readPositionString = args[2];
+        String readParagraphString = args[2];
+        try {
+          readParagraph = Long.parseLong(readParagraphString);
+        } catch(Exception e) { }
+      }
+
+      if (args.length > 3) {
+        String readPositionString = args[3];
         try {
           readPosition = Long.parseLong(readPositionString);
         } catch(Exception e) { }
       }
       
-      SendMessageList reply = FlibustaClient.readBook(bookId, readPosition);
+      SendMessageList reply = FlibustaClient.readBook(bookId, readParagraph, readPosition);
       bot.sendReply(update, reply);
       return;
     }

@@ -126,7 +126,7 @@ public class TelegramView
     return result;
   }
 
-  public static SendMessageList bookSearchResult(List<BookInfo> books, int searchId, int from, int pageSize, int found, String prev, String next)
+  public static SendMessageList bookSearchResult(List<BookInfo> books, int searchId, int from, int pageSize, int found, String next)
   {
     SendMessageList result = new SendMessageList(4096);
 
@@ -171,55 +171,49 @@ public class TelegramView
       result.endTextPage();
     }
 
-    // generate the book info download and read buttons
+    // generate the book search next buttons
     
     List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
 
-    InlineKeyboardButton btn1 = new InlineKeyboardButton();
-    btn1.setText(litresbot.Application.userMessages.get(UserMessagesEn.beginText));
-    btn1.setCallbackData("/");
-    if (prev != null) {
-      btn1.setText(litresbot.Application.userMessages.get(UserMessagesEn.previousText));
-      btn1.setCallbackData(prev);
-    }
-    buttonsRow.add(btn1);
-
-    InlineKeyboardButton btn2 = new InlineKeyboardButton();
-    btn2.setText(litresbot.Application.userMessages.get(UserMessagesEn.endText));
-    btn2.setCallbackData("/");
+    InlineKeyboardButton btn = new InlineKeyboardButton();
+    btn.setText(litresbot.Application.userMessages.get(UserMessagesEn.endText));
+    btn.setCallbackData("/");
     if (next != null) {
-      btn2.setText(litresbot.Application.userMessages.get(UserMessagesEn.nextText));
-      btn2.setCallbackData(next);
+      btn.setText(litresbot.Application.userMessages.get(UserMessagesEn.nextText));
+      btn.setCallbackData(next);
     }
-    buttonsRow.add(btn2);
+    buttonsRow.add(btn);
 
-    if (buttonsRow.size() > 0) {
-      List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
-      buttons.add(buttonsRow);
-      result.appendButtons(buttons);
-    }
-
+    List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
+    buttons.add(buttonsRow);
+    result.appendButtons(buttons);
     return result;
   }
 
-  public static SendMessageList readBookSection(SendMessageList output, String line)
-  {
-    String escapedLine = TelegramEscape.escapeText(line);
-              
-    output.appendTextPage("<b>");
-    output.appendTextPage("\n" + escapedLine + "\n\n");
-    output.appendTextPage("</b>");
-    output.endTextPage();
-
-    return output;
-  }
-
-  public static SendMessageList readBookParagraph(SendMessageList output, String line)
+  public static SendMessageList readBookSection(SendMessageList output, String line, String next)
   {
     String escapedLine = TelegramEscape.escapeText(line);
               
     output.appendTextPage(escapedLine + "\n\n");
     output.endTextPage();
+
+    // generate the book next page
+    
+    List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
+
+    InlineKeyboardButton btn = new InlineKeyboardButton();
+    btn.setText(litresbot.Application.userMessages.get(UserMessagesEn.endText));
+    btn.setCallbackData("/");
+    if (next != null) {
+      btn.setText(litresbot.Application.userMessages.get(UserMessagesEn.nextText));
+      btn.setCallbackData(next);
+    }
+    buttonsRow.add(btn);
+
+    List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
+    buttons.add(buttonsRow);
+    output.appendButtons(buttons);
+
     return output;
   }
 }

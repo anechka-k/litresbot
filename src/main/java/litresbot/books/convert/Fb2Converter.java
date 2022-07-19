@@ -1,13 +1,12 @@
 package litresbot.books.convert;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Stack;
 
 import org.apache.log4j.Logger;
-import org.glassfish.grizzly.utils.Charsets;
 
 import com.kursx.parser.fb2.Body;
 import com.kursx.parser.fb2.FictionBook;
@@ -18,133 +17,170 @@ import com.kursx.parser.fb2.Title;
 public class Fb2Converter
 {
   final static Logger logger = Logger.getLogger(Fb2Converter.class);
-  public final static String PARAGRAPH_INDENT = "  ";
+  public final static String PARAGRAPH_INDENT = "    ";
 
-  static abstract class SectionPrinter {
-    public ByteArrayOutputStream stream;
-    // returns false if printer is no longer available
-    public abstract boolean print(Section section) throws IOException;
+  public static class ConvertResult {
+    public String text;
+    public long nextParagraph;
+    public long nextPosition;
   }
 
-  static class TextSectionPrinter extends SectionPrinter {
-    public boolean print(Section section) throws IOException {
-      Title sectionTitle = section.getTitle();
-          
-      // show title if available
-      if(sectionTitle != null) {
-        List<P> titleParagraphs = sectionTitle.getParagraphs();
-        for(P paragraph : titleParagraphs) {
-          appendParagraph(paragraph.getText(), stream);
-        }
-      }
-        
-      List<P> paragraphs = section.getParagraphs();
-      for(P paragraph : paragraphs) {
-        appendParagraph(paragraph.getText(), stream);
-      }
-
-      return true;
-    }
+  static abstract class SectionPrinter {
+    public StringBuilder stream = new StringBuilder();
+    // returns false if printer is no longer available
+    public abstract boolean print(Section section, boolean isLastSection) throws IOException;
   }
 
   static class TextSectionRangePrinter extends SectionPrinter {
+    // input parameters for choosing range of the printer
+    public long fromParagraph;
     public long fromPosition;
-    public long toPosition;
-    public long skipped;
+    public long size;
 
-    public boolean print(Section section) throws IOException {
+    // local variables to skip to the desired position and paragraph
+    private long skipped;
+    private long skippedParagraphs;
+
+    // outputs
+    private long nextParagraph;
+    private long nextPosition;
+
+    public long getNextParagraph() {
+      return nextParagraph;
+    }
+
+    public long getNextPosition() {
+      return nextPosition;
+    }
+
+    public boolean print(Section section, boolean isLastSection) throws IOException {
+      nextParagraph = skippedParagraphs;
       Title sectionTitle = section.getTitle();
           
       // show title if available
       if(sectionTitle != null) {
         List<P> titleParagraphs = sectionTitle.getParagraphs();
-        for(P paragraph : titleParagraphs) {
-          if (!printParagraph(paragraph)) return false;
+        if (skippedParagraphs + titleParagraphs.size() >= fromParagraph) {
+          for(int i = 0; i < titleParagraphs.size(); i++) {
+            if (skippedParagraphs < fromParagraph) {
+              skippedParagraphs++;
+              nextPosition = 0;
+              continue;
+            }
+            P paragraph = titleParagraphs.get(i);
+            boolean isLastParagraph = (i + 1) >= titleParagraphs.size();
+            if (!printParagraph(paragraph, isLastSection, isLastParagraph)) return false;
+          }
+        } else {
+          skippedParagraphs += titleParagraphs.size();
+          nextPosition = 0;
         }
       }
           
       List<P> paragraphs = section.getParagraphs();
-      for(P paragraph : paragraphs) {
-        if (!printParagraph(paragraph)) return false;
+      if (skippedParagraphs + paragraphs.size() < fromParagraph) {
+        skippedParagraphs += paragraphs.size();
+        nextPosition = 0;
+        return true;
+      }
+
+      for(int i = 0; i < paragraphs.size(); i++) {
+        if (skippedParagraphs < fromParagraph) {
+          skippedParagraphs++;
+          nextPosition = 0;
+          continue;
+        }
+        P paragraph = paragraphs.get(i);
+        boolean isLastParagraph = (i + 1) >= paragraphs.size();
+        if (!printParagraph(paragraph, isLastSection, isLastParagraph)) return false;
       }
 
       return true;
     }
 
-    private boolean printParagraph(P paragraph) throws IOException {
-      ByteArrayOutputStream tmp = new ByteArrayOutputStream();
-      appendParagraph(paragraph.getText(), tmp);
+    private boolean printParagraph(P paragraph, boolean isLastSection, boolean isLastParagraph) throws IOException {
+      String tmp = PARAGRAPH_INDENT + paragraph.getText() + "\n";
 
-      int paragraphSize = tmp.size();
-      int paragraphFrom = 0;
+      int paragraphSize = tmp.length();
+      int paragraphStart = 0;
 
       if (fromPosition > 0 && (skipped < fromPosition)) {
         long paragraphEnd = skipped + paragraphSize;
         if (paragraphEnd <= fromPosition) {
           skipped += paragraphSize;
+
+          if (isLastSection && isLastParagraph) {
+            nextParagraph = -1;
+            return false;
+          }
+          skippedParagraphs++;
+          nextParagraph = skippedParagraphs;
+          nextPosition = 0;
           return true;
         }
-        paragraphFrom = (int)(fromPosition - skipped);
-        paragraphSize -= paragraphFrom;
-        skipped += paragraphFrom;
+        paragraphStart = (int)(fromPosition - skipped);
+        paragraphSize -= paragraphStart;
+        skipped += paragraphStart;
       }
 
-      if (toPosition > 0) {
-        if (skipped + stream.size() + paragraphSize > toPosition) {
-          paragraphSize = (int)(toPosition - (skipped + stream.size()));
+      if (size > 0) {
+        if (stream.length() + paragraphSize > size) {
+          paragraphSize = (int)(size - stream.length());
         }
         if (paragraphSize <= 0) return false;
       }
 
-      stream.write(tmp.toByteArray(), paragraphFrom, paragraphSize);
+      stream.append(tmp.substring(paragraphStart, paragraphStart + paragraphSize));
+
+      nextPosition = paragraphStart + paragraphSize;
+      if (nextPosition >= tmp.length()) {
+        if (isLastSection && isLastParagraph) {
+          nextParagraph = -1;
+          return false;
+        }
+        skippedParagraphs++;
+        nextParagraph = skippedParagraphs;
+        nextPosition = 0;
+      }
       return true;
     }
   }
 
-  public static byte[] convertToText(FictionBook book) {
-    return convertToText(book, 0, -1);
+  public static ConvertResult convertToText(FictionBook book) throws UnsupportedEncodingException {
+    return convertToText(book, 0, 0, -1);
   }
 
-  public static byte[] convertToText(FictionBook book, long fromPosition, long toPosition) {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
+  public static ConvertResult convertToText(FictionBook book, long fromParagraph, long fromPosition, long size) throws UnsupportedEncodingException {
+    ConvertResult result = new ConvertResult();
     Body fb2Body = book.getBody();
-    if(fb2Body == null) return out.toByteArray();
+    if(fb2Body == null) return result;
 
     // prepare text printer to print a tree of sections
     TextSectionRangePrinter printer = new TextSectionRangePrinter();
+    printer.fromParagraph = fromParagraph;
     printer.fromPosition = fromPosition;
-    printer.toPosition = toPosition;
-    printer.stream = out;
+    printer.size = size;
 
     try {
+      Section root = new Section();
       Title fb2Title = fb2Body.getTitle();
       // the main title of the book
       if (fb2Title != null) {
-        List<P> titleParagraphs = fb2Title.getParagraphs();
-
-        for(P paragraph : titleParagraphs) {
-          if (!printer.printParagraph(paragraph)) break;
-        }
+        root.setTitle(fb2Title);
       }
+      root.getSections().addAll(fb2Body.getSections());
 
       // now process sections.
       // NOTE: Section may contain other sections
-
-      List<Section> sections = fb2Body.getSections();
-      
-      for(Section section : sections) {
-        depthFirstSearch(section, printer);
-      }
+      depthFirstSearch(root, printer);
     } catch(IOException e) {
       logger.warn("Failed to convert book", e);
     }
 
-    return out.toByteArray();
-  }
-
-  private static void appendParagraph(String text, OutputStream result) throws IOException {
-    String textLine = PARAGRAPH_INDENT + text + "\n";
-    result.write(textLine.getBytes(Charsets.UTF8_CHARSET));
+    result.text = printer.stream.toString();
+    result.nextParagraph = printer.nextParagraph;
+    result.nextPosition = printer.nextPosition;
+    return result;
   }
 
   private static void depthFirstSearch(Section node, SectionPrinter printer) throws IOException {  
@@ -153,12 +189,14 @@ public class Fb2Converter
   
     while (!stk.empty()) {
       Section top = stk.pop();
-          
-      for (Section child: top.getSections()) {
-        stk.push(child);
+
+      ListIterator<Section> listIterator = top.getSections().listIterator(top.getSections().size());
+      while (listIterator.hasPrevious()) {
+        stk.push(listIterator.previous());
       }
       
-      if (!printer.print(top)) return;
+      if (top.getTitle() == null && top.getParagraphs().isEmpty()) continue;
+      if (!printer.print(top, stk.empty())) return;
     }
   }
 }

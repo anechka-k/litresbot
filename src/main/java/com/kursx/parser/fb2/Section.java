@@ -12,7 +12,7 @@ public class Section extends IdElement {
     protected Image image;
     protected Annotation annotation;
     protected ArrayList<Epigraph> epigraphs;
-    protected ArrayList<Section> sections;
+    protected ArrayList<Section> sections = new ArrayList<>();
     protected ArrayList<P> paragraphs = new ArrayList<>();
     protected ArrayList<Element> elements;
     protected Title title;
@@ -74,7 +74,7 @@ public class Section extends IdElement {
 
     @NotNull
     public ArrayList<Section> getSections() {
-        return sections == null ? new ArrayList<Section>() : sections;
+        return sections;
     }
 
     @NotNull

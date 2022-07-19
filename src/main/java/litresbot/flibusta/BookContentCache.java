@@ -4,13 +4,14 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.kursx.parser.fb2.FictionBook;
 
 public class BookContentCache
 {
   static public class CacheRecord
   {
     String id;
-    byte[] content;
+    FictionBook book;
   }
 
   static Cache<String, CacheRecord> cache = CacheBuilder.newBuilder().

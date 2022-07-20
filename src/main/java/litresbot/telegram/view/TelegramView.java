@@ -44,6 +44,13 @@ public class TelegramView
     return result;
   }
 
+  public static SendMessageList searchInProgress() {
+    SendMessageList result = new SendMessageList(4096);
+    result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.searchInProgress));
+    result.endTextPage();
+    return result;
+  }
+
   public static SendMessageList bookChooseFormat(BookInfo book) {
     SendMessageList result = new SendMessageList(4096);
 
@@ -126,6 +133,20 @@ public class TelegramView
     return result;
   }
 
+  public static SendMessageList downloadInProgress() {
+    SendMessageList result = new SendMessageList(4096);
+    result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.downloadInProgress));
+    result.endTextPage();
+    return result;
+  }
+
+  public static SendMessageList downloadFinished() {
+    SendMessageList result = new SendMessageList(4096);
+    result.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.downloadFinished));
+    result.endTextPage();
+    return result;
+  }
+
   public static SendMessageList bookSearchResult(List<BookInfo> books, int searchId, int from, int pageSize, int found, String next)
   {
     SendMessageList result = new SendMessageList(4096);
@@ -190,11 +211,13 @@ public class TelegramView
     return result;
   }
 
-  public static SendMessageList readBookSection(SendMessageList output, String line, String next)
+  public static SendMessageList readBookSection(SendMessageList output, String line, String next, int pageNumber)
   {
     String escapedLine = TelegramEscape.escapeText(line);
               
     output.appendTextPage(escapedLine + "\n\n");
+    output.appendTextPage("------------------\n");
+    output.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.pageNumberText) + pageNumber + "\n");
     output.endTextPage();
 
     // generate the book next page

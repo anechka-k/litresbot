@@ -19,16 +19,20 @@ public class UserMessagesRu implements UserMessages
     map.put(UserMessagesEn.errorCouldNotDownloadFile, "Не получилось загрузить файл");
     map.put(UserMessagesEn.errorBadCommand, "Неверная команда");
     map.put(UserMessagesEn.errorSearchNotFound, "Ничего не найдено");
+    map.put(UserMessagesEn.searchInProgress, "Поиск книги...");
     map.put(UserMessagesEn.searchFoundTotal, "Найдено: ");
     map.put(UserMessagesEn.bookText, "книга");
     map.put(UserMessagesEn.searchGoto, "Загрузить: ");
     map.put(UserMessagesEn.searchDownload, "Загрузить");
+    map.put(UserMessagesEn.downloadInProgress, "Загружаю книгу...");
+    map.put(UserMessagesEn.downloadFinished, "Книга загружена");
     map.put(UserMessagesEn.searchRead, "Читать");
     map.put(UserMessagesEn.previousText, "Назад");
     map.put(UserMessagesEn.nextText, "Дальше");
     map.put(UserMessagesEn.beginText, "Начало");
     map.put(UserMessagesEn.endText, "Конец");
     map.put(UserMessagesEn.annotationEmpty, "Нет аннотации");
+    map.put(UserMessagesEn.pageNumberText, "Страница: ");
     return map;
   }
   

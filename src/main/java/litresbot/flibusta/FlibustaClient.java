@@ -38,14 +38,11 @@ public class FlibustaClient
   public static SendMessageList getBooks(String searchQuery, int pageSize)
   {
     OpdsSearchResult searchResult = new OpdsSearchResult();
-    try
-    {
+    try {
       searchResult = FlibustaOpdsClient.searchBooks(searchQuery);
       searchId++;
       searchCache.put(searchId, searchResult);
-    }
-    catch (Exception e)
-    {
+    } catch (Exception e) {
       logger.warn("Http request failed", e);
     }
 
@@ -138,11 +135,11 @@ public class FlibustaClient
     return FlibustaDownloader.download(bookInfo, format);
   }
 
-  public static SendMessageList readBook(String bookId, Long paragraph, Long position)
+  public static SendMessageList readBook(String bookId, Long paragraph, Long position, int pageNumber)
   {
     BookInfo bookInfo = booksCache.get(bookId);
     if(bookInfo == null) return null;
 
-    return FlibustaReader.readBook(bookInfo, paragraph, position);
+    return FlibustaReader.readBook(bookInfo, paragraph, position, pageNumber);
   }
 }

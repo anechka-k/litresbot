@@ -34,9 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-/**
- * Created by flicus on 14.05.16.
- */
 public class PageParser
 {
   public static Page parse(InputStream input)
@@ -75,6 +72,7 @@ public class PageParser
           {
             entry.author = author.getChild("name", element.getNamespace()).getText();
           }
+          // this id can be used to filter processed authors and other elements
           Element id = element.getChild("id", element.getNamespace());
           if (id != null)
           {

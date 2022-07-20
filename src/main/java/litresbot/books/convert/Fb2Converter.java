@@ -68,7 +68,7 @@ public class Fb2Converter
               continue;
             }
             P paragraph = titleParagraphs.get(i);
-            boolean isLastParagraph = (i + 1) >= titleParagraphs.size();
+            boolean isLastParagraph = ((i + 1) >= titleParagraphs.size() && section.getParagraphs().size() == 0);
             if (!printParagraph(paragraph, isLastSection, isLastParagraph)) return false;
           }
         } else {
@@ -99,7 +99,7 @@ public class Fb2Converter
     }
 
     private boolean printParagraph(P paragraph, boolean isLastSection, boolean isLastParagraph) throws IOException {
-      String tmp = PARAGRAPH_INDENT + paragraph.getText() + "\n";
+      String tmp = "\n" + PARAGRAPH_INDENT + paragraph.getText();
 
       int paragraphSize = tmp.length();
       int paragraphStart = 0;

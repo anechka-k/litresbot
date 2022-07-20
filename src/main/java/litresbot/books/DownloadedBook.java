@@ -4,8 +4,8 @@ package litresbot.books;
 
 public class DownloadedBook
 {
-  public byte[] content;
   public String filename;
+  public byte[] content;
   
   public DownloadedBook() { }
 }

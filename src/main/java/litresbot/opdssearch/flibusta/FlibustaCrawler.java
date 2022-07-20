@@ -42,6 +42,16 @@ public class FlibustaCrawler
           
         String entryId = entry.id;
         entryId = entryId.replace("tag:book:", "");
+
+        // replace id with short URL id
+        for (Link l : entry.links) {
+          if (!l.href.startsWith("/b/")) continue;
+          String[] linkParts = l.href.substring(1).split("/");
+          if (linkParts.length < 2) continue;
+          if (linkParts[1].length() == 0) continue;
+          entryId = linkParts[1];
+          break;
+        }
           
         Entry newEntry = new Entry(entry.updated, entryId, entry.title, entry.author, entry.annotation);
         newEntry.links = currentLinks;

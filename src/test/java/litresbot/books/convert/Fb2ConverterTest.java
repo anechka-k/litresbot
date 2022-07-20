@@ -185,42 +185,42 @@ public class Fb2ConverterTest {
     "</FictionBook>";
 
   String textConverted =
-    "  John Doe\n" +
-    "  Fiction Book\n" +
-    "  Chapter 1\n" +
-    "  Line one of the first chapter\n" +
-    "  Line two of the first chapter\n" +
-    "  Line three of the first chapter\n" +
-    "  Chapter 2\n" +
-    "  Line one of the second chapter\n" +
-    "  Line two of the second chapter\n" +
-    "  Line three of the second chapter\n" +
-    "  Line four of the second chapter\n";
+    "\n    John Doe" +
+    "\n    Fiction Book" +
+    "\n    Chapter 1" +
+    "\n    Line one of the first chapter" +
+    "\n    Line two of the first chapter" +
+    "\n    Line three of the first chapter" +
+    "\n    Chapter 2" +
+    "\n    Line one of the second chapter" +
+    "\n    Line two of the second chapter" +
+    "\n    Line three of the second chapter" +
+    "\n    Line four of the second chapter";
 
   String textConvertedNoTitle =
-    "  Chapter 1\n" +
-    "  Line one of the first chapter\n" +
-    "  Line two of the first chapter\n" +
-    "  Line three of the first chapter\n" +
-    "  Chapter 2\n" +
-    "  Line one of the second chapter\n" +
-    "  Line two of the second chapter\n" +
-    "  Line three of the second chapter\n" +
-    "  Line four of the second chapter\n";
+    "\n    Chapter 1" +
+    "\n    Line one of the first chapter" +
+    "\n    Line two of the first chapter" +
+    "\n    Line three of the first chapter" +
+    "\n    Chapter 2" +
+    "\n    Line one of the second chapter" +
+    "\n    Line two of the second chapter" +
+    "\n    Line three of the second chapter" +
+    "\n    Line four of the second chapter";
 
   String textConvertedNested =
-    "  John Doe\n" +
-    "  Fiction Book\n" +
-    "  Chapter 1\n" +
-    "  Line 1 of 1 chapter\n" +
-    "  Line 2 of 1 chapter\n" +
-    "  Chapter 2\n" +
-    "  Line 1 of 2 chapter\n" +
-    "  Line 2 of 2 chapter\n" +
-    "  Chapter 2.1\n" +
-    "  Line 1 of 2.1 chapter\n" +
-    "  Chapter 2.2\n" +
-    "  Line 1 of 2.2 chapter\n";
+    "\n    John Doe" +
+    "\n    Fiction Book" +
+    "\n    Chapter 1" +
+    "\n    Line 1 of 1 chapter" +
+    "\n    Line 2 of 1 chapter" +
+    "\n    Chapter 2" +
+    "\n    Line 1 of 2 chapter" +
+    "\n    Line 2 of 2 chapter" +
+    "\n    Chapter 2.1" +
+    "\n    Line 1 of 2.1 chapter" +
+    "\n    Chapter 2.2" +
+    "\n    Line 1 of 2.2 chapter";
 
   String textConvertedNoParagraphs = "";
 
@@ -267,16 +267,16 @@ public class Fb2ConverterTest {
   @Test 
   public void testConvertRangedOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
     String textRangeConverted =
-      "  Chapter 1\n" +
-      "  Line one of the first chapter\n";
+      "\n    Chapter 1" +
+      "\n    Line one of the first chapter";
 
-    String textRangeConvertedNextPage = "  Line two of the first chapter\n";
+    String textRangeConvertedNextPage = "\n    Line two of the first chapter";
 
     InputStream inputStream = new ByteArrayInputStream(fb2Text.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book, 0, 26, 44);
+    ConvertResult converted = Fb2Converter.convertToText(book, 0, 30, 48);
     Assert.assertEquals(textRangeConverted, converted.text);
-    converted = Fb2Converter.convertToText(book, 4, 0, 32);
+    converted = Fb2Converter.convertToText(book, 4, 0, 34);
     Assert.assertEquals(textRangeConvertedNextPage, converted.text);
   }
 }

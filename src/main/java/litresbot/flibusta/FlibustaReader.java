@@ -21,7 +21,7 @@ public class FlibustaReader
   ///TODO: make it a property
   final static int pageSize = 3000;
 
-  public static SendMessageList readBook(BookInfo bookInfo, Long paragraph, Long position)
+  public static SendMessageList readBook(BookInfo bookInfo, Long paragraph, Long position, int pageNumber)
   {
     DownloadedFb2Book book = null;
     try
@@ -41,7 +41,7 @@ public class FlibustaReader
     try
     {
       ConvertResult converted = Fb2Converter.convertToText(book.book, paragraph, position, pageSize);
-      return readBookPage(converted.text, bookInfo.id, paragraph, position, converted.nextParagraph, converted.nextPosition, pageSize);
+      return readBookPage(converted.text, bookInfo.id, converted.nextParagraph, converted.nextPosition, pageNumber);
     }
     catch(IOException e)
     {
@@ -51,16 +51,16 @@ public class FlibustaReader
     return TelegramView.bookInfoNotFound();
   }
 
-  private static SendMessageList readBookPage(String content, String bookId, Long paragraph, Long position, Long nextParagraph, Long nextPosition, int size) {
+  private static SendMessageList readBookPage(String content, String bookId, Long nextParagraph, Long nextPosition, int pageNumber) {
     SendMessageList result = new SendMessageList(4096);
     if(content == null) return TelegramView.bookCouldNotDownload();
 
     String nextPage = null;
     if (nextParagraph >= 0) {
-      nextPage = "/read " + bookId + " " + nextParagraph + " " + nextPosition + " " + size;
+      nextPage = "/read " + bookId + " " + nextParagraph + " " + nextPosition + " " + (pageNumber + 1);
     }
 
-    result = TelegramView.readBookSection(result, content, nextPage);
+    result = TelegramView.readBookSection(result, content, nextPage, pageNumber);
 
     ///TODO: add page numbers
 

@@ -211,13 +211,13 @@ public class TelegramView
     return result;
   }
 
-  public static SendMessageList readBookSection(SendMessageList output, String line, String next, int pageNumber)
+  public static SendMessageList readBookSection(SendMessageList output, String line, String next, int pageCount, int pageNumber)
   {
     String escapedLine = TelegramEscape.escapeText(line);
               
     output.appendTextPage(escapedLine + "\n\n");
     output.appendTextPage("------------------\n");
-    output.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.pageNumberText) + pageNumber + "\n");
+    output.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.pageNumberText) + pageNumber + " / " + pageCount + "\n");
     output.endTextPage();
 
     // generate the book next page

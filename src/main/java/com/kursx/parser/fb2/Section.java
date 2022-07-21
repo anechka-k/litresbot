@@ -41,7 +41,6 @@ public class Section extends IdElement {
                     epigraphs.add(new Epigraph(node));
                     break;
                 case "section":
-                    if (sections == null) sections = new ArrayList<>();
                     sections.add(new Section(node));
                     break;
                 case "poem":

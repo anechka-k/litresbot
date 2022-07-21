@@ -135,11 +135,11 @@ public class FlibustaClient
     return FlibustaDownloader.download(bookInfo, format);
   }
 
-  public static SendMessageList readBook(String bookId, Long paragraph, Long position, int pageNumber)
+  public static SendMessageList readBook(String bookId, int pageNumber)
   {
     BookInfo bookInfo = booksCache.get(bookId);
     if(bookInfo == null) return null;
 
-    return FlibustaReader.readBook(bookInfo, paragraph, position, pageNumber);
+    return FlibustaReader.readBook(bookInfo, pageNumber);
   }
 }

@@ -15,6 +15,7 @@ public class P extends Element {
     protected List<Emphasis> emphasis;
     protected List<Strong> strong;
     protected List<StrikeThrough> strikeThrough;
+    protected ArrayList<P> paragraphs = new ArrayList<>();
 //    TODO
 //    Для нижних индексов <sub>, а для верхних индексов <sup>
 //    Программный код - <code>
@@ -63,6 +64,9 @@ public class P extends Element {
                     if (emphasis == null) emphasis = new ArrayList<>();
                     emphasis.add(new Emphasis(node.getTextContent(), p.getTextContent()));
                     break;
+                case "p":
+                    paragraphs.add(new P(node));
+                    break;
             }
         }
     }
@@ -85,5 +89,9 @@ public class P extends Element {
 
     public List<StrikeThrough> getStrikeThrough() {
       return strikeThrough;
+    }
+
+    public ArrayList<P> getParagraphs() {
+        return paragraphs;
     }
 }

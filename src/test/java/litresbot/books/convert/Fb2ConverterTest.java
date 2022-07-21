@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -184,6 +185,27 @@ public class Fb2ConverterTest {
     "  </body>\n" +
     "</FictionBook>";
 
+  String fb2TextNestedParagraphs =
+    "<?xml version=\"1.0\" encoding=\"utf8\"?>\n" +
+    "<FictionBook xmlns:l=\"http://www.w3.org/1999/xlink\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\">\n" +
+    "  <body>\n" +
+    "    <section>\n" +
+    "      <title>\n" +
+    "        <p>Chapter 1</p>\n" +
+    "      </title>\n" +
+    "      <p>Line <emphasis>1</emphasis> of 1 chapter <p>Line 2 of 1 chapter</p></p>\n" +
+    "      <p>Line 3 of 1 chapter</p>\n" +
+    "    </section>\n" +
+    "    <section>\n" +
+    "      <title>\n" +
+    "        <p>Chapter 2</p>\n" +
+    "      </title>\n" +
+    "      <p>Line 1 of 2 chapter</p>\n" +
+    "      <p>Line 2 of 2 chapter</p>\n" +
+    "    </section>\n" +
+    "  </body>\n" +
+    "</FictionBook>";
+
   String textConverted =
     "\n    John Doe" +
     "\n    Fiction Book" +
@@ -221,6 +243,16 @@ public class Fb2ConverterTest {
     "\n    Line 1 of 2.1 chapter" +
     "\n    Chapter 2.2" +
     "\n    Line 1 of 2.2 chapter";
+
+  String textConvertedNestedParagraphs =
+    "\n    Chapter 1" +
+    "\n    Line 1 of 1 chapter " +
+    "\n" +
+    "\n    Line 2 of 1 chapter" +
+    "\n    Line 3 of 1 chapter" +
+    "\n    Chapter 2" +
+    "\n    Line 1 of 2 chapter" +
+    "\n    Line 2 of 2 chapter";
 
   String textConvertedNoParagraphs = "";
 
@@ -265,6 +297,16 @@ public class Fb2ConverterTest {
   }
 
   @Test 
+  public void testConvertNestedParagraphsOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
+    ///TODO: nested paragraphs are not processed properly
+
+    InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphs.getBytes(Charset.forName("UTF-8")));
+    FictionBook book = new FictionBook(inputStream);
+    ConvertResult converted = Fb2Converter.convertToText(book);
+    Assert.assertEquals(textConvertedNestedParagraphs, converted.text);
+  }
+
+  @Test 
   public void testConvertRangedOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
     String textRangeConverted =
       "\n    Chapter 1" +
@@ -278,5 +320,25 @@ public class Fb2ConverterTest {
     Assert.assertEquals(textRangeConverted, converted.text);
     converted = Fb2Converter.convertToText(book, 4, 0, 34);
     Assert.assertEquals(textRangeConvertedNextPage, converted.text);
+  }
+
+  @Test 
+  public void testConvertPagesOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
+    String textConvertedPage1 =
+      "\n    John Doe" +
+      "\n    Fi";
+
+    String textConvertedPage2 =
+      "ction Book" +
+      "\n    Chapt";
+
+    InputStream inputStream = new ByteArrayInputStream(fb2Text.getBytes(Charset.forName("UTF-8")));
+    FictionBook book = new FictionBook(inputStream);
+    List<String> pages = Fb2Converter.convertToText(book, 20);
+    System.out.println(pages.get(0));
+    System.out.println(pages.get(1));
+    Assert.assertEquals(pages.size(), 10);
+    Assert.assertEquals(textConvertedPage1, pages.get(0));
+    Assert.assertEquals(textConvertedPage2, pages.get(1));
   }
 }

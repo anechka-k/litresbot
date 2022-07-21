@@ -145,38 +145,22 @@ public class TelegramBotCommands
 
         bot.sendBusy(update);
         String bookId = args[1];
-        Long readParagraph = 0L;
-        Long readPosition = 0L;
-        int pageNumber = 1;
+        int pageNumber = 0;
 
         if (args.length > 2) {
-          String readParagraphString = args[2];
-          try {
-            readParagraph = Long.parseLong(readParagraphString);
-          } catch(Exception e) { }
-        }
-
-        if (args.length > 3) {
-          String readPositionString = args[3];
-          try {
-            readPosition = Long.parseLong(readPositionString);
-          } catch(Exception e) { }
-        }
-
-        if (args.length > 4) {
-          String pageNumberString = args[4];
+          String pageNumberString = args[2];
           try {
             pageNumber = Integer.parseInt(pageNumberString);
           } catch(Exception e) { }
         }
         
         // show the download message if it is first time book access
-        if (readParagraph == 0 && readPosition == 0) {
+        if (pageNumber == 0) {
           bot.sendReply(update, TelegramView.downloadInProgress());
           bot.sendBusy(update);
         }
 
-        SendMessageList reply = FlibustaClient.readBook(bookId, readParagraph, readPosition, pageNumber);
+        SendMessageList reply = FlibustaClient.readBook(bookId, pageNumber);
         bot.sendReply(update, reply);
         return;
       }

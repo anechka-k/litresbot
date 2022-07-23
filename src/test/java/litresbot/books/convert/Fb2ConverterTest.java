@@ -3,8 +3,7 @@ package litresbot.books.convert;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
-import com.kursx.parser.fb2.FictionBook;
-
+import litresbot.books.FictionBook;
 import litresbot.books.convert.Fb2Converter.ConvertResult;
 
 import java.io.ByteArrayInputStream;
@@ -193,8 +192,8 @@ public class Fb2ConverterTest {
     "      <title>\n" +
     "        <p>Chapter 1</p>\n" +
     "      </title>\n" +
-    "      <p>Line <emphasis>1</emphasis> of 1 chapter <p>Line 2 of 1 chapter</p></p>\n" +
-    "      <p>Line 3 of 1 chapter</p>\n" +
+    "      <p>Line <emphasis>1</emphasis> of 1 chapter <p>Line 2 of 1 chapter</p><p>Line 3 of 1 chapter</p></p>\n" +
+    "      <p>Line 4 of 1 chapter</p>\n" +
     "    </section>\n" +
     "    <section>\n" +
     "      <title>\n" +
@@ -247,9 +246,9 @@ public class Fb2ConverterTest {
   String textConvertedNestedParagraphs =
     "\n    Chapter 1" +
     "\n    Line 1 of 1 chapter " +
-    "\n" +
     "\n    Line 2 of 1 chapter" +
     "\n    Line 3 of 1 chapter" +
+    "\n    Line 4 of 1 chapter" +
     "\n    Chapter 2" +
     "\n    Line 1 of 2 chapter" +
     "\n    Line 2 of 2 chapter";
@@ -298,7 +297,9 @@ public class Fb2ConverterTest {
 
   @Test 
   public void testConvertNestedParagraphsOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
-    ///TODO: nested paragraphs are not processed properly
+    ///TODO: nested paragraphs are processed in tree order but in actual book it may be different
+    ///      eg. <p>text begin <p>list1</p> <p>list2</p> text end</p> should result to
+    ///          text begin \n list1 \n list2 \n text end
 
     InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphs.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
@@ -335,8 +336,6 @@ public class Fb2ConverterTest {
     InputStream inputStream = new ByteArrayInputStream(fb2Text.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
     List<String> pages = Fb2Converter.convertToText(book, 20);
-    System.out.println(pages.get(0));
-    System.out.println(pages.get(1));
     Assert.assertEquals(pages.size(), 10);
     Assert.assertEquals(textConvertedPage1, pages.get(0));
     Assert.assertEquals(textConvertedPage2, pages.get(1));

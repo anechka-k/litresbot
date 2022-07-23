@@ -6,11 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
-import com.kursx.parser.fb2.Body;
-import com.kursx.parser.fb2.FictionBook;
-import com.kursx.parser.fb2.Section;
-import com.kursx.parser.fb2.Title;
+import litresbot.books.FictionBook;
 
 public class Fb2Converter
 {
@@ -29,8 +28,11 @@ public class Fb2Converter
 
   public static ConvertResult convertToText(FictionBook book, long fromParagraph, long fromPosition, long size) throws UnsupportedEncodingException {
     ConvertResult result = new ConvertResult();
-    Body fb2Body = book.getBody();
-    if(fb2Body == null) return result;
+    NodeList fb2BodyList = book.xmlDocument.getElementsByTagName("body");
+    if(fb2BodyList.getLength() == 0) return result;
+    
+    Node fb2Body = fb2BodyList.item(0);
+    if (fb2Body.getNodeType() != Node.ELEMENT_NODE) return result;
 
     // prepare text printer to print a tree of sections
     TextSectionRangePrinter printer = new TextSectionRangePrinter();
@@ -39,18 +41,10 @@ public class Fb2Converter
     printer.size = size;
 
     try {
-      Section root = new Section();
-      Title fb2Title = fb2Body.getTitle();
-      // the main title of the book
-      if (fb2Title != null) {
-        root.setTitle(fb2Title);
-      }
-      root.getSections().addAll(fb2Body.getSections());
-
-      // now process sections.
+      // now process fb2 XML body.
       // NOTE: Section may contain other sections
       // NOTE: Paragraph may contain other paragraphs
-      printer.depthFirstSearch(root);
+      printer.printBody(fb2Body);
     } catch(IOException e) {
       logger.warn("Failed to convert book", e);
     }

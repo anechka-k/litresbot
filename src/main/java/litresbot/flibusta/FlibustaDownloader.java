@@ -8,12 +8,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.log4j.Logger;
 import org.xml.sax.SAXException;
 
-import com.kursx.parser.fb2.FictionBook;
-
 import litresbot.books.BookDownloader;
 import litresbot.books.BookInfo;
 import litresbot.books.DownloadedBook;
 import litresbot.books.DownloadedFb2Book;
+import litresbot.books.FictionBook;
 import litresbot.books.FileExtensions;
 import litresbot.books.convert.Fb2Converter;
 

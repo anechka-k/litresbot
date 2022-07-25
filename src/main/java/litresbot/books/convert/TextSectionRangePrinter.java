@@ -3,6 +3,7 @@ package litresbot.books.convert;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Stack;
 
 import org.w3c.dom.Element;
@@ -10,6 +11,11 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 class TextSectionRangePrinter {
+  class ParagraphNode {
+    public Node node;
+    public String text;
+  }
+
   // input parameters for choosing range of the printer
   public long fromParagraph;
   public long fromPosition;
@@ -33,7 +39,8 @@ class TextSectionRangePrinter {
     return stream.toString();
   }
 
-  public void printBody(Node body) throws IOException {
+  // return true if size limit has reached
+  public boolean printBody(Node body) throws IOException {
     Element fb2BodyElement = (Element)body;
     NodeList sections = fb2BodyElement.getElementsByTagName("section");
 
@@ -41,54 +48,37 @@ class TextSectionRangePrinter {
     NodeListIterator titlesIterator = new NodeListIterator(fb2BodyElement);
     for (Node n : titlesIterator.getIterable()) {
       if (n.getNodeName() != "title") continue;
-      if (printSection(n)) return;
+      if (printSection(n)) return true;
       break;
     }
 
     // add all sections of the body (including childrens' children) to the sectionNodes
     NodeListIterator sectionsIterator = new NodeListIterator(sections);
     for (Node n : sectionsIterator.getIterable()) {
-      if (printSection(n)) return;
+      if (printSection(n)) return true;
     }
 
-    nextParagraph = -1;
+    return false;
   }
 
   // return true if size limit has reached
   private boolean printSection(Node section) throws IOException {
     NodeListIterator sectionChildrenIterator = new NodeListIterator(section);
-    
-    List<Node> paragraphs = new ArrayList<>();
+
     for (Node c : sectionChildrenIterator.getIterable()) {
       if (c.getNodeName() == "title") {
         // process title paragraphs
         NodeListIterator titleChildrenIterator = new NodeListIterator(c);
         for (Node t : titleChildrenIterator.getIterable()) {
           if (t.getNodeName() != "p") continue;
-          paragraphs.add(t);
+          if (printParagraphTree(t)) return true;
         }
         continue;
       }
       if (c.getNodeName() == "p") {
-        paragraphs.add(c);
+        if (printParagraphTree(c)) return true;
         continue;
       }
-    }
-
-    if (nextParagraph + paragraphs.size() < fromParagraph) {
-      nextParagraph += paragraphs.size();
-      nextPosition = 0;
-      return false;
-    }
-
-    for(int i = 0; i < paragraphs.size(); i++) {
-      if (nextParagraph < fromParagraph) {
-        nextParagraph++;
-        nextPosition = 0;
-        continue;
-      }
-
-      if (printParagraphTree(paragraphs.get(i))) return true;
     }
 
     return false;
@@ -101,28 +91,48 @@ class TextSectionRangePrinter {
   
     while (!stk.empty()) {
       Node top = stk.pop();
+      ParagraphNode topParagraph = new ParagraphNode();
+      topParagraph.node = top;
+      topParagraph.text = "";
+
+      if (!top.hasChildNodes()) {
+        topParagraph.text = top.getTextContent();
+      }
 
       NodeListIterator paragraphsIterator = new NodeListIterator(top);
-      paragraphsIterator.setEnd();
-      while (paragraphsIterator.hasPrevious()) {
-        Node p = paragraphsIterator.previous();
-        if (p.getNodeName() != "p") continue;
+      List<Node> children = new ArrayList<Node>();
+      for (Node p : paragraphsIterator.getIterable()) {
+        if (p.getNodeName() == "p") {
+          children.add(p);
+          continue;
+        }
+        if (children.isEmpty()) {
+          topParagraph.text += p.getTextContent();
+          continue;
+        }
+        children.add(p);
+      }
+
+      ListIterator<Node> iterator = children.listIterator(children.size());
+      while (iterator.hasPrevious()) {
+        Node p = iterator.previous();
         stk.push(p);
       }
 
-      if (printParagraph(top)) return true;
+      if (printParagraph(topParagraph)) return true;
+      nextParagraph++;
+      nextPosition = 0;
     }
     return false;
   }
 
   // return true if size limit has reached
-  private boolean printParagraph(Node paragraph) throws IOException {
-    String paragraphText = "";
-    NodeListIterator childrenIterator = new NodeListIterator(paragraph);
-    for (Node c : childrenIterator.getIterable()) {
-      if (c.getNodeName() == "p") continue;
-      paragraphText += c.getTextContent();
+  private boolean printParagraph(ParagraphNode paragraph) throws IOException {
+    if (nextParagraph < fromParagraph) {
+      return false;
     }
+
+    String paragraphText = paragraph.text;
     String tmp = "\n" + Fb2Converter.PARAGRAPH_INDENT + paragraphText;
 
     int paragraphSize = tmp.length();
@@ -131,18 +141,13 @@ class TextSectionRangePrinter {
     if (fromPosition > 0 && (nextPosition < fromPosition)) {
       long paragraphEnd = nextPosition + paragraphSize;
       if (paragraphEnd <= fromPosition) {
-        nextPosition += paragraphSize;
-        nextParagraph++;
-        nextPosition = 0;
-        if (nextParagraph > fromParagraph) {
-          fromParagraph++;
-          fromPosition = (fromPosition > paragraphSize) ? (fromPosition - paragraphSize) : 0;
-        }
+        fromPosition = (fromPosition > paragraphSize) ? (fromPosition - paragraphSize) : 0;
         return false;
       }
+
       paragraphStart = (int)(fromPosition - nextPosition);
       paragraphSize -= paragraphStart;
-      nextPosition += paragraphStart;
+      nextPosition = fromPosition;
     }
 
     if (size > 0) {
@@ -158,12 +163,7 @@ class TextSectionRangePrinter {
 
     nextPosition = paragraphStart + paragraphSize;
     if (nextPosition >= tmp.length()) {
-      nextParagraph++;
-      nextPosition = 0;
-      if (nextParagraph > fromParagraph) {
-        fromParagraph++;
-        fromPosition = (fromPosition > paragraphSize) ? (fromPosition - paragraphSize) : 0;
-      }
+      fromPosition = 0;
     }
 
     return size < 0 ? false : stream.length() >= size;

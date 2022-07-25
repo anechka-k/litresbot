@@ -44,14 +44,21 @@ public class Fb2Converter
       // now process fb2 XML body.
       // NOTE: Section may contain other sections
       // NOTE: Paragraph may contain other paragraphs
-      printer.printBody(fb2Body);
+      if (printer.printBody(fb2Body)) {
+        result.nextParagraph = printer.getNextParagraph();
+        result.nextPosition = printer.getNextPosition();
+      } else {
+        result.nextParagraph = -1;
+        result.nextPosition = 0;
+      }
     } catch(IOException e) {
       logger.warn("Failed to convert book", e);
+
+      result.nextParagraph = -1;
+      result.nextPosition = 0;
     }
 
     result.text = printer.getText();
-    result.nextParagraph = printer.getNextParagraph();
-    result.nextPosition = printer.getNextPosition();
     return result;
   }
 

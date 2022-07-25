@@ -192,8 +192,8 @@ public class Fb2ConverterTest {
     "      <title>\n" +
     "        <p>Chapter 1</p>\n" +
     "      </title>\n" +
-    "      <p>Line <emphasis>1</emphasis> of 1 chapter <p>Line 2 of 1 chapter</p><p>Line 3 of 1 chapter</p></p>\n" +
-    "      <p>Line 4 of 1 chapter</p>\n" +
+    "      <p>Line <emphasis>1</emphasis> of 1 chapter <p>Line 2 of 1 chapter</p><p>Line 3 of 1 chapter</p>Line 4 of 1 chapter</p>\n" +
+    "      <p>Line 5 of 1 chapter</p>\n" +
     "    </section>\n" +
     "    <section>\n" +
     "      <title>\n" +
@@ -201,6 +201,20 @@ public class Fb2ConverterTest {
     "      </title>\n" +
     "      <p>Line 1 of 2 chapter</p>\n" +
     "      <p>Line 2 of 2 chapter</p>\n" +
+    "    </section>\n" +
+    "  </body>\n" +
+    "</FictionBook>";
+
+  String fb2TextNestedParagraphsWithEmphasis =
+    "<?xml version=\"1.0\" encoding=\"utf8\"?>\n" +
+    "<FictionBook xmlns:l=\"http://www.w3.org/1999/xlink\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\">\n" +
+    "  <body>\n" +
+    "    <section>\n" +
+    "      <title>\n" +
+    "        <p>Chapter 1</p>\n" +
+    "      </title>\n" +
+    "      <p>Line <emphasis>1</emphasis> of 1 chapter <p>Line 2 of 1 chapter</p><p>Line 3 of 1 chapter</p>Line 4 of <emphasis>1</emphasis> chapter</p>\n" +
+    "      <p>Line 5 of 1 chapter</p>\n" +
     "    </section>\n" +
     "  </body>\n" +
     "</FictionBook>";
@@ -249,6 +263,7 @@ public class Fb2ConverterTest {
     "\n    Line 2 of 1 chapter" +
     "\n    Line 3 of 1 chapter" +
     "\n    Line 4 of 1 chapter" +
+    "\n    Line 5 of 1 chapter" +
     "\n    Chapter 2" +
     "\n    Line 1 of 2 chapter" +
     "\n    Line 2 of 2 chapter";
@@ -297,10 +312,6 @@ public class Fb2ConverterTest {
 
   @Test 
   public void testConvertNestedParagraphsOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
-    ///TODO: nested paragraphs are processed in tree order but in actual book it may be different
-    ///      eg. <p>text begin <p>list1</p> <p>list2</p> text end</p> should result to
-    ///          text begin \n list1 \n list2 \n text end
-
     InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphs.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
     ConvertResult converted = Fb2Converter.convertToText(book);
@@ -336,8 +347,43 @@ public class Fb2ConverterTest {
     InputStream inputStream = new ByteArrayInputStream(fb2Text.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
     List<String> pages = Fb2Converter.convertToText(book, 20);
-    Assert.assertEquals(pages.size(), 10);
+    Assert.assertEquals(pages.size(), 16);
     Assert.assertEquals(textConvertedPage1, pages.get(0));
     Assert.assertEquals(textConvertedPage2, pages.get(1));
   }
+
+  @Test 
+  public void testConvertNestedParagraphsPagesOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
+    String textConvertedPage1 = "\n    Chapt";
+    String textConvertedPage2 = "er 1\n    L";
+    String textConvertedPage3 = "ine 1 of 1";
+
+    InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphs.getBytes(Charset.forName("UTF-8")));
+    FictionBook book = new FictionBook(inputStream);
+    List<String> pages = Fb2Converter.convertToText(book, 10);
+    Assert.assertEquals(pages.size(), 20);
+    Assert.assertEquals(textConvertedPage1, pages.get(0));
+    Assert.assertEquals(textConvertedPage2, pages.get(1));
+    Assert.assertEquals(textConvertedPage3, pages.get(2));
+  }
+
+  @Test 
+  public void testConvertNestedParagraphsWithEmphasisOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
+    String textConvertedNestedParagraphsWithEmphasis =
+    "\n    Chapter 1" +
+    "\n    Line 1 of 1 chapter " +
+    "\n    Line 2 of 1 chapter" +
+    "\n    Line 3 of 1 chapter" +
+    "\n    Line 4 of 1 chapter" +
+    "\n    Line 5 of 1 chapter";
+
+    InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphsWithEmphasis.getBytes(Charset.forName("UTF-8")));
+    FictionBook book = new FictionBook(inputStream);
+    ConvertResult converted = Fb2Converter.convertToText(book);
+    Assert.assertEquals(textConvertedNestedParagraphsWithEmphasis, converted.text);
+  }
+
+  ///TODO: still not ideal parsing.
+  /// eg. <p> begin <p> nested </p> <p> tags </p> end <emphasis> line </emphasis> </p>
+  /// is not parsed properly
 }

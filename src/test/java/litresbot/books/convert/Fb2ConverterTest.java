@@ -213,7 +213,7 @@ public class Fb2ConverterTest {
     "      <title>\n" +
     "        <p>Chapter 1</p>\n" +
     "      </title>\n" +
-    "      <p>Line <emphasis>1</emphasis> of 1 chapter <p>Line 2 of 1 chapter</p><p>Line 3 of 1 chapter</p>Line 4 of <emphasis>1</emphasis> chapter</p>\n" +
+    "      <p>Line <emphasis>1</emphasis> of 1 chapter <p>Line 2 of 1 chapter</p><p>Line 3 of 1 chapter</p><strong>Line</strong> 4 of <emphasis>1</emphasis> chapter</p>\n" +
     "      <p>Line 5 of 1 chapter</p>\n" +
     "    </section>\n" +
     "  </body>\n" +
@@ -383,7 +383,22 @@ public class Fb2ConverterTest {
     Assert.assertEquals(textConvertedNestedParagraphsWithEmphasis, converted.text);
   }
 
-  ///TODO: still not ideal parsing.
-  /// eg. <p> begin <p> nested </p> <p> tags </p> end <emphasis> line </emphasis> </p>
-  /// is not parsed properly
+  @Test 
+  public void testConvertTelegramRangedOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
+    String textRangeConverted =
+      " chapter " +
+      "\n    Line 2 of 1 chapter" +
+      "\n    Line 3 of ";
+
+    String textRangeConvertedNextPage =
+      "\n    <b>Line</b> 4 of 1 chapter" +
+      "\n  ";
+
+    InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphsWithEmphasis.getBytes(Charset.forName("UTF-8")));
+    FictionBook book = new FictionBook(inputStream);
+    ConvertResult converted = Fb2Converter.convertToTelegram(book, 0, 30, 48);
+    Assert.assertEquals(textRangeConverted, converted.text);
+    converted = Fb2Converter.convertToTelegram(book, 4, 0, 34);
+    Assert.assertEquals(textRangeConvertedNextPage, converted.text);
+  }
 }

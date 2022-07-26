@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Stack;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -14,6 +15,9 @@ class TextSectionRangePrinter {
   class ParagraphNode {
     public Node node;
     public String text;
+    public List<Pair<Integer, Integer>> strong = new ArrayList<>();
+    public List<Pair<Integer, Integer>> italic = new ArrayList<>();
+    public List<Pair<Integer, Integer>> strike = new ArrayList<>();
   }
 
   // input parameters for choosing range of the printer
@@ -22,10 +26,10 @@ class TextSectionRangePrinter {
   public long size;
 
   // outputs
-  private long nextParagraph;
-  private long nextPosition;
+  protected long nextParagraph;
+  protected long nextPosition;
 
-  private StringBuilder stream = new StringBuilder();
+  protected StringBuilder stream = new StringBuilder();
 
   public long getNextParagraph() {
     return nextParagraph;
@@ -85,41 +89,75 @@ class TextSectionRangePrinter {
   }
 
   // return true if size limit has reached
-  private boolean printParagraphTree(Node node) throws IOException {
-    Stack<Node> stk = new Stack<Node>();
-    stk.push(node);
+  protected boolean printParagraphTree(Node node) throws IOException {
+    Stack<ParagraphNode> stk = new Stack<ParagraphNode>();
+    ParagraphNode topParagraph = new ParagraphNode();
+    topParagraph.node = node;
+    topParagraph.text = node.getTextContent();
+    stk.push(topParagraph);
   
     while (!stk.empty()) {
-      Node top = stk.pop();
-      ParagraphNode topParagraph = new ParagraphNode();
-      topParagraph.node = top;
-      topParagraph.text = "";
+      ParagraphNode top = stk.pop();
 
-      if (!top.hasChildNodes()) {
-        topParagraph.text = top.getTextContent();
-      }
+      if (top.node != null) {
+        NodeListIterator paragraphsIterator = new NodeListIterator(top.node);
+        List<ParagraphNode> children = new ArrayList<ParagraphNode>();
+        ParagraphNode currentParagraph = null;
 
-      NodeListIterator paragraphsIterator = new NodeListIterator(top);
-      List<Node> children = new ArrayList<Node>();
-      for (Node p : paragraphsIterator.getIterable()) {
-        if (p.getNodeName() == "p") {
-          children.add(p);
-          continue;
+        for (Node p : paragraphsIterator.getIterable()) {
+          if (p.getNodeName() == "p") {
+            if (currentParagraph != null) {
+              children.add(currentParagraph);
+              currentParagraph = null;
+            }
+
+            ParagraphNode childParagraph = new ParagraphNode();
+            childParagraph.node = p;
+            childParagraph.text = p.getTextContent();
+            children.add(childParagraph);
+            continue;
+          }
+
+          if (currentParagraph == null) {
+            currentParagraph = new ParagraphNode();
+            currentParagraph.text = "";
+          }
+          if (p.getNodeName() == "strong") {
+            currentParagraph.strong.add(Pair.of(currentParagraph.text.length(), currentParagraph.text.length() + p.getTextContent().length()));
+            currentParagraph.text += p.getTextContent();
+            continue;
+          }
+          if (p.getNodeName() == "emphasis") {
+            currentParagraph.italic.add(Pair.of(currentParagraph.text.length(), currentParagraph.text.length() + p.getTextContent().length()));
+            currentParagraph.text += p.getTextContent();
+            continue;
+          }
+          if (p.getNodeName() == "strikethrough") {
+            currentParagraph.text += p.getTextContent();
+            continue;
+          }
+          if (p.getNodeName() == "subtitle") {
+            currentParagraph.text += p.getTextContent();
+            continue;
+          }
+          currentParagraph.text += p.getTextContent();
         }
-        if (children.isEmpty()) {
-          topParagraph.text += p.getTextContent();
-          continue;
+
+        if (currentParagraph != null) {
+          children.add(currentParagraph);
         }
-        children.add(p);
+
+        ListIterator<ParagraphNode> iterator = children.listIterator(children.size());
+        while (iterator.hasPrevious()) {
+          ParagraphNode p = iterator.previous();
+          stk.push(p);
+        }
+
+        // take first paragraph again
+        top = stk.pop();
       }
 
-      ListIterator<Node> iterator = children.listIterator(children.size());
-      while (iterator.hasPrevious()) {
-        Node p = iterator.previous();
-        stk.push(p);
-      }
-
-      if (printParagraph(topParagraph)) return true;
+      if (printParagraph(top)) return true;
       nextParagraph++;
       nextPosition = 0;
     }
@@ -127,7 +165,7 @@ class TextSectionRangePrinter {
   }
 
   // return true if size limit has reached
-  private boolean printParagraph(ParagraphNode paragraph) throws IOException {
+  protected boolean printParagraph(ParagraphNode paragraph) throws IOException {
     if (nextParagraph < fromParagraph) {
       return false;
     }

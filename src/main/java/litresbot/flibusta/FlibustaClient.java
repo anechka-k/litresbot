@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import litresbot.books.BookFileLink;
 import litresbot.books.BookInfo;
 import litresbot.books.DownloadedBook;
 import litresbot.books.FileExtensions;
@@ -115,7 +116,16 @@ public class FlibustaClient
       bookInfoFilteredAnnotation.annotation = TelegramFilterHtml.filterText(annotation);
     }
 
-    return TelegramView.bookChooseAction(bookInfoFilteredAnnotation);
+    boolean hasFb2Format = false;
+    for(BookFileLink l : bookInfo.links) {
+      String formatType = FileExtensions.detectFormat(l.format);
+      if (formatType.startsWith(FlibustaDownloader.defaultReadFormat)) {
+        hasFb2Format = true;
+        break;
+      }
+    }
+
+    return TelegramView.bookChooseAction(bookInfoFilteredAnnotation, hasFb2Format);
   }
   
   public static SendMessageList chooseBookFormat(String bookId)

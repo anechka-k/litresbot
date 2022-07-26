@@ -22,10 +22,6 @@ public class Fb2Converter
     public long nextPosition;
   }
 
-  public static ConvertResult convertToText(FictionBook book) throws UnsupportedEncodingException {
-    return convertToText(book, 0, 0, -1);
-  }
-
   public static ConvertResult convertToText(FictionBook book, long fromParagraph, long fromPosition, long size) throws UnsupportedEncodingException {
     ConvertResult result = new ConvertResult();
     NodeList fb2BodyList = book.xmlDocument.getElementsByTagName("body");
@@ -62,6 +58,10 @@ public class Fb2Converter
     return result;
   }
 
+  public static ConvertResult convertToText(FictionBook book) throws UnsupportedEncodingException {
+    return convertToText(book, 0, 0, -1);
+  }
+
   public static List<String> convertToText(FictionBook book, int pageSize) throws UnsupportedEncodingException {
     List<String> pages = new ArrayList<String>();
 
@@ -75,5 +75,41 @@ public class Fb2Converter
       pages.add(converted.text);
     }
     return pages;
+  }
+
+  public static ConvertResult convertToTelegram(FictionBook book, long fromParagraph, long fromPosition, long size) throws UnsupportedEncodingException {
+    ConvertResult result = new ConvertResult();
+    NodeList fb2BodyList = book.xmlDocument.getElementsByTagName("body");
+    if(fb2BodyList.getLength() == 0) return result;
+    
+    Node fb2Body = fb2BodyList.item(0);
+    if (fb2Body.getNodeType() != Node.ELEMENT_NODE) return result;
+
+    // prepare text printer to print a tree of sections
+    TelegramSectionRangePrinter printer = new TelegramSectionRangePrinter();
+    printer.fromParagraph = fromParagraph;
+    printer.fromPosition = fromPosition;
+    printer.size = size;
+
+    try {
+      // now process fb2 XML body.
+      // NOTE: Section may contain other sections
+      // NOTE: Paragraph may contain other paragraphs
+      if (printer.printBody(fb2Body)) {
+        result.nextParagraph = printer.getNextParagraph();
+        result.nextPosition = printer.getNextPosition();
+      } else {
+        result.nextParagraph = -1;
+        result.nextPosition = 0;
+      }
+    } catch(IOException e) {
+      logger.warn("Failed to convert book", e);
+
+      result.nextParagraph = -1;
+      result.nextPosition = 0;
+    }
+
+    result.text = printer.getText();
+    return result;
   }
 }

@@ -88,7 +88,7 @@ public class TelegramView
     return result;
   }
 
-  public static SendMessageList bookChooseAction(BookInfo book)
+  public static SendMessageList bookChooseAction(BookInfo book, boolean canRead)
   {
     SendMessageList result = new SendMessageList(4096);
         
@@ -117,14 +117,16 @@ public class TelegramView
     
     List<InlineKeyboardButton> buttonsRow = new ArrayList<InlineKeyboardButton>();
     InlineKeyboardButton btn1 = new InlineKeyboardButton();
-    InlineKeyboardButton btn2 = new InlineKeyboardButton();
     btn1.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchDownload));
     btn1.setCallbackData("/format " + book.id);
-    btn2.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchRead));
-    btn2.setCallbackData("/read " + book.id);
-    
     buttonsRow.add(btn1);
-    buttonsRow.add(btn2);
+    
+    if (canRead) {
+      InlineKeyboardButton btn2 = new InlineKeyboardButton();
+      btn2.setText(litresbot.Application.userMessages.get(UserMessagesEn.searchRead));
+      btn2.setCallbackData("/read " + book.id);
+      buttonsRow.add(btn2);
+    }
     
     List<List<InlineKeyboardButton>> buttons = new ArrayList<List<InlineKeyboardButton>>();
     buttons.add(buttonsRow);

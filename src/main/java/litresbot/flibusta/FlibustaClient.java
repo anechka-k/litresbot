@@ -83,7 +83,7 @@ public class FlibustaClient
 
     String nextPage = null;
     if (from + pageSize < found) {
-      thisPageBooks = thisPageBooks.subList(0, pageSize);
+      thisPageBooks = thisPageBooks.subList(from, from + pageSize);
       nextPage = "/next " + searchId + " " + (from + pageSize);
     }
 

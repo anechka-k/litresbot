@@ -4,7 +4,6 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import litresbot.books.FictionBook;
-import litresbot.books.convert.Fb2Converter.ConvertResult;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -274,64 +273,53 @@ public class Fb2ConverterTest {
   public void testConvertOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
     InputStream inputStream = new ByteArrayInputStream(fb2Text.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book);
-    Assert.assertEquals(textConverted, converted.text);
+    List<String> pages = Fb2Converter.convertToText(book, 1000);
+    Assert.assertEquals(1, pages.size());
+    Assert.assertEquals(textConverted, pages.get(0));
   }
 
   @Test 
   public void testConvertNoDescriptionOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
     InputStream inputStream = new ByteArrayInputStream(fb2TextNoDescription.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book);
-    Assert.assertEquals(textConverted, converted.text);
+    List<String> pages = Fb2Converter.convertToText(book, 1000);
+    Assert.assertEquals(1, pages.size());
+    Assert.assertEquals(textConverted, pages.get(0));
   }
 
   @Test 
   public void testConvertNoTitleOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
     InputStream inputStream = new ByteArrayInputStream(fb2TextNoTitle.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book);
-    Assert.assertEquals(textConvertedNoTitle, converted.text);
+    List<String> pages = Fb2Converter.convertToText(book, 1000);
+    Assert.assertEquals(1, pages.size());
+    Assert.assertEquals(textConvertedNoTitle, pages.get(0));
   }
 
   @Test 
   public void testConvertNoParagraphsOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
     InputStream inputStream = new ByteArrayInputStream(fb2TextNoParagraphs.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book);
-    Assert.assertEquals(textConvertedNoParagraphs, converted.text);
+    List<String> pages = Fb2Converter.convertToText(book, 1000);
+    Assert.assertTrue(pages.isEmpty());
   }
 
   @Test 
   public void testConvertNestedOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
     InputStream inputStream = new ByteArrayInputStream(fb2TextNestedSections.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book);
-    Assert.assertEquals(textConvertedNested, converted.text);
+    List<String> pages = Fb2Converter.convertToText(book, 1000);
+    Assert.assertEquals(1, pages.size());
+    Assert.assertEquals(textConvertedNested, pages.get(0));
   }
 
   @Test 
   public void testConvertNestedParagraphsOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
     InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphs.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book);
-    Assert.assertEquals(textConvertedNestedParagraphs, converted.text);
-  }
-
-  @Test 
-  public void testConvertRangedOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
-    String textRangeConverted =
-      "\n    Chapter 1" +
-      "\n    Line one of the first chapter";
-
-    String textRangeConvertedNextPage = "\n    Line two of the first chapter";
-
-    InputStream inputStream = new ByteArrayInputStream(fb2Text.getBytes(Charset.forName("UTF-8")));
-    FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book, 0, 30, 48);
-    Assert.assertEquals(textRangeConverted, converted.text);
-    converted = Fb2Converter.convertToText(book, 4, 0, 34);
-    Assert.assertEquals(textRangeConvertedNextPage, converted.text);
+    List<String> pages = Fb2Converter.convertToText(book, 1000);
+    Assert.assertEquals(1, pages.size());
+    Assert.assertEquals(textConvertedNestedParagraphs, pages.get(0));
   }
 
   @Test 
@@ -379,26 +367,25 @@ public class Fb2ConverterTest {
 
     InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphsWithEmphasis.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToText(book);
-    Assert.assertEquals(textConvertedNestedParagraphsWithEmphasis, converted.text);
+    List<String> pages = Fb2Converter.convertToText(book, 1000);
+    Assert.assertEquals(1, pages.size());
+    Assert.assertEquals(textConvertedNestedParagraphsWithEmphasis, pages.get(0));
   }
 
   @Test 
-  public void testConvertTelegramRangedOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
-    String textRangeConverted =
-      " chapter " +
-      "\n    Line 2 of 1 chapter" +
-      "\n    Line 3 of ";
-
-    String textRangeConvertedNextPage =
-      "\n    <b>Line</b> 4 of 1 chapter" +
-      "\n  ";
+  public void testConvertTelegramOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
+    String textConvertedNestedParagraphsWithEmphasis =
+    "\n    Chapter 1" +
+    "\n    Line <i>1</i> of 1 chapter " +
+    "\n    Line 2 of 1 chapter" +
+    "\n    Line 3 of 1 chapter" +
+    "\n    <b>Line</b> 4 of <i>1</i> chapter" +
+    "\n    Line 5 of 1 chapter";
 
     InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphsWithEmphasis.getBytes(Charset.forName("UTF-8")));
     FictionBook book = new FictionBook(inputStream);
-    ConvertResult converted = Fb2Converter.convertToTelegram(book, 0, 30, 48);
-    Assert.assertEquals(textRangeConverted, converted.text);
-    converted = Fb2Converter.convertToTelegram(book, 4, 0, 34);
-    Assert.assertEquals(textRangeConvertedNextPage, converted.text);
+    List<String> pages = Fb2Converter.convertToTelegram(book, 1000);
+    Assert.assertEquals(1, pages.size());
+    Assert.assertEquals(textConvertedNestedParagraphsWithEmphasis, pages.get(0));
   }
 }

@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Stack;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import litresbot.books.FictionBook;
+import litresbot.books.convert.TagPosition.TagType;
 
 public class Fb2Converter
 {
@@ -122,17 +122,29 @@ public class Fb2Converter
             currentParagraph.text = "";
           }
           if (p.getNodeName() == "strong") {
-            currentParagraph.strong.add(Pair.of(currentParagraph.text.length(), currentParagraph.text.length() + p.getTextContent().length()));
+            TagPosition tag = new TagPosition();
+            tag.from = currentParagraph.text.length();
+            tag.to = currentParagraph.text.length() + p.getTextContent().length();
+            tag.type = TagType.BOLD;
+            currentParagraph.tags.add(tag);
             currentParagraph.text += p.getTextContent();
             continue;
           }
           if (p.getNodeName() == "emphasis") {
-            currentParagraph.italic.add(Pair.of(currentParagraph.text.length(), currentParagraph.text.length() + p.getTextContent().length()));
+            TagPosition tag = new TagPosition();
+            tag.from = currentParagraph.text.length();
+            tag.to = currentParagraph.text.length() + p.getTextContent().length();
+            tag.type = TagType.ITALIC;
+            currentParagraph.tags.add(tag);
             currentParagraph.text += p.getTextContent();
             continue;
           }
           if (p.getNodeName() == "strikethrough") {
-            currentParagraph.strike.add(Pair.of(currentParagraph.text.length(), currentParagraph.text.length() + p.getTextContent().length()));
+            TagPosition tag = new TagPosition();
+            tag.from = currentParagraph.text.length();
+            tag.to = currentParagraph.text.length() + p.getTextContent().length();
+            tag.type = TagType.STRIKE;
+            currentParagraph.tags.add(tag);
             currentParagraph.text += p.getTextContent();
             continue;
           }

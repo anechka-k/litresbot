@@ -1,9 +1,8 @@
 package litresbot.books.convert;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 class TelegramParagraphPrinter extends TextParagraphPrinter {
 
@@ -17,8 +16,8 @@ class TelegramParagraphPrinter extends TextParagraphPrinter {
     printedSize = 0;
   }
 
-  ///TODO: do not break tags - they should be always included even if size limit is reached
-  ///TODO: do not leave not closed tags. If size limit is reached - close all unclosed tags
+  ///TODO: think about escaping text
+  ///TODO: check unsupported tags handling
   ///TODO: try to not break words - wait for space even if size limit is reached.
   ///      Do not wait too long - if word length is too far ahead of the size limit, break it.
 
@@ -41,22 +40,20 @@ class TelegramParagraphPrinter extends TextParagraphPrinter {
         paragraphSizeToWrite = pageSizeLeft;
       }
 
-      String withTags = paragraphText.substring(currentPosition, currentPosition + paragraphSizeToWrite);
-      int len = paragraph.text.length();
-      
-      for (Pair<Integer, Integer> p : paragraph.italic) {
-        withTags = paragraph.text.substring(0, p.getLeft()) +
-          "<i>" + paragraph.text.substring(p.getLeft(), p.getRight()) + "</i>" +
-          paragraph.text.substring(p.getRight(), len);
+      String paragraphPage = paragraphText.substring(currentPosition, currentPosition + paragraphSizeToWrite);
+      List<TagPosition> shiftedTags = new ArrayList<>();
+      int shiftRight = ("\n" + Fb2Converter.PARAGRAPH_INDENT).length();
+      for (TagPosition t : paragraph.tags) {
+        if ((t.from + shiftRight) < currentPosition) continue;
+        TagPosition newTag = new TagPosition();
+        newTag.from = t.from + shiftRight - currentPosition;
+        newTag.to = t.to + shiftRight - currentPosition;
+        newTag.type = t.type;
+        shiftedTags.add(newTag);
       }
+      String withTags = TagsInserter.insertTags(paragraphPage, shiftedTags);
 
-      for (Pair<Integer, Integer> p : paragraph.strong) {
-        withTags = paragraph.text.substring(0, p.getLeft()) +
-          "<b>" + paragraph.text.substring(p.getLeft(), p.getRight()) + "</b>" +
-          paragraph.text.substring(p.getRight(), len);
-      }
-
-      currentPage.append("\n" + Fb2Converter.PARAGRAPH_INDENT + withTags);
+      currentPage.append(withTags);
       currentPosition += paragraphSizeToWrite;
       printedSize += paragraphSizeToWrite;
     }

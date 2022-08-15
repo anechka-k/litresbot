@@ -71,7 +71,7 @@ public class FlibustaDownloader
     book.filename = filename;
 
     logger.info("Parsing book: " + url);
-    book.pages = Fb2Converter.convertToText(fb2, pageSize);
+    book.pages = Fb2Converter.convertToTelegram(fb2, pageSize);
     logger.info("Parsing book done: " + url);
 
     rec = new BookContentCache.CacheRecord();

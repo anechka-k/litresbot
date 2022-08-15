@@ -15,6 +15,10 @@ import litresbot.flibusta.FlibustaClient;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.telegram.view.TelegramView;
 
+///TODO: log user command to file in debug mode
+///TODO: log all pressed buttons to file in debug mode
+///TODO: add book id to read button. Reload book if not found in cache and continue reading.
+
 public class TelegramBotCommands
 {
   final static Logger logger = Logger.getLogger(TelegramBotCommands.class);

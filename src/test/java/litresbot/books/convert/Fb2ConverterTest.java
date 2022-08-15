@@ -388,4 +388,21 @@ public class Fb2ConverterTest {
     Assert.assertEquals(1, pages.size());
     Assert.assertEquals(textConvertedNestedParagraphsWithEmphasis, pages.get(0));
   }
+
+  @Test 
+  public void testConvertTelegramPagesOk() throws OutOfMemoryError, ParserConfigurationException, IOException, SAXException {
+    String textConvertedPage1 = "\n    Chapt";
+    String textConvertedPage2 = "er 1\n    L";
+    String textConvertedPage3 = "ine <i>1</i> of 1";
+    String textConvertedPage4 = " chapter \n";
+
+    InputStream inputStream = new ByteArrayInputStream(fb2TextNestedParagraphsWithEmphasis.getBytes(Charset.forName("UTF-8")));
+    FictionBook book = new FictionBook(inputStream);
+    List<String> pages = Fb2Converter.convertToTelegram(book, 10);
+    Assert.assertEquals(14, pages.size());
+    Assert.assertEquals(textConvertedPage1, pages.get(0));
+    Assert.assertEquals(textConvertedPage2, pages.get(1));
+    Assert.assertEquals(textConvertedPage3, pages.get(2));
+    Assert.assertEquals(textConvertedPage4, pages.get(3));
+  }
 }

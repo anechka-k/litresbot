@@ -12,7 +12,6 @@ import litresbot.books.plurals.PluralsTextRu;
 import litresbot.books.plurals.PluralsTextEn;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.telegram.SendMessageList;
-import litresbot.telegram.TelegramEscape;
 
 public class TelegramView
 {
@@ -214,10 +213,8 @@ public class TelegramView
   }
 
   public static SendMessageList readBookSection(SendMessageList output, String line, String next, int pageCount, int pageNumber)
-  {
-    String escapedLine = TelegramEscape.escapeText(line);
-              
-    output.appendTextPage(escapedLine + "\n\n");
+  {              
+    output.appendTextPage(line + "\n\n");
     output.appendTextPage("------------------\n");
     output.appendTextPage(litresbot.Application.userMessages.get(UserMessagesEn.pageNumberText) + pageNumber + " / " + pageCount + "\n");
     output.endTextPage();

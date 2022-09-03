@@ -21,14 +21,16 @@ public class FlibustaOpdsClient
   
   private static final String authorSearch = "/search?searchType=authors&searchTerm=%s";
   private static final String bookSearch = "/search?searchType=books&searchTerm=%s";
-  
-  public static OpdsSearchResult searchBooks(String searchQuery)
-  {
-    String flibustaHost = AppProperties.getStringProperty("flibustaHost");
+  public static String flibustaHost = "";
+  static {
+    flibustaHost = AppProperties.getStringProperty("flibustaHost");
     if (flibustaHost == null || flibustaHost.length() == 0) {
       flibustaHost = "http:\\flibusta.is";
     }
-
+  }
+  
+  public static OpdsSearchResult searchBooks(String searchQuery)
+  {
     OpdsSearchResult result = new OpdsSearchResult();
     result.books = new ArrayList<BookInfo>();
 

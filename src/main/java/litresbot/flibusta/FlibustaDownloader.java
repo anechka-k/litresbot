@@ -8,6 +8,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.log4j.Logger;
 import org.xml.sax.SAXException;
 
+import litresbot.AppProperties;
 import litresbot.books.BookDownloader;
 import litresbot.books.BookInfo;
 import litresbot.books.DownloadedBook;
@@ -21,8 +22,13 @@ public class FlibustaDownloader
   final static Logger logger = Logger.getLogger(FlibustaDownloader.class);
 
   final static String defaultReadFormat = "fb2";
-  ///TODO: make it a property
-  final static int pageSize = 3000;
+  public static Integer readPageSize = 3000;
+  static {
+    Integer pageSize = AppProperties.getIntProperty("readPage");
+    if(pageSize != null) {
+      readPageSize = pageSize;
+    }
+  }
 
   public static DownloadedBook download(BookInfo bookInfo, String format) throws IOException
   {
@@ -71,7 +77,7 @@ public class FlibustaDownloader
     book.filename = filename;
 
     logger.info("Parsing book: " + url);
-    book.pages = Fb2Converter.convertToTelegram(fb2, pageSize);
+    book.pages = Fb2Converter.convertToTelegram(fb2, readPageSize);
     logger.info("Parsing book done: " + url);
 
     rec = new BookContentCache.CacheRecord();

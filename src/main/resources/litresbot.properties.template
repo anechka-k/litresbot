@@ -13,3 +13,8 @@ flibustaHost=http://flibusta.is
 
 # where we store downloaded book files
 flibustaDownloadPath=./flibooks
+
+# how many results on the Search page
+searchPage=10
+# how many symbols on the Read Book page
+readPage=3000

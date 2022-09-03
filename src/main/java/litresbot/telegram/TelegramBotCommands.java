@@ -9,19 +9,23 @@ import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import litresbot.AppProperties;
 import litresbot.Application;
 import litresbot.books.DownloadedBook;
 import litresbot.flibusta.FlibustaClient;
 import litresbot.localisation.UserMessagesEn;
 import litresbot.telegram.view.TelegramView;
 
-///TODO: log user command to file in debug mode
-///TODO: log all pressed buttons to file in debug mode
-///TODO: add book id to read button. Reload book if not found in cache and continue reading.
-
 public class TelegramBotCommands
 {
   final static Logger logger = Logger.getLogger(TelegramBotCommands.class);
+  public static Integer searchPageSize = 10;
+  static {
+    Integer pageSize = AppProperties.getIntProperty("searchPage");
+    if(pageSize != null) {
+      searchPageSize = pageSize;
+    }
+  }
 
   public static void commandReceived(TelegramBot bot, Update update)
   {
@@ -60,8 +64,8 @@ public class TelegramBotCommands
       return;
     }
     
-    logger.debug("commandReceived: " + StringEscapeUtils.escapeJava(cmd) + ", " + StringEscapeUtils.escapeJava(userName));
-    logger.debug("user has language: " + StringEscapeUtils.escapeJava(languageCode));
+    logger.info("commandReceived from " + StringEscapeUtils.escapeJava(userName) + ":" + StringEscapeUtils.escapeJava(cmd));
+    logger.info("user has language: " + StringEscapeUtils.escapeJava(languageCode));
     
     String normalCmd = cmd;
     normalCmd = normalCmd.toLowerCase();
@@ -252,16 +256,15 @@ public class TelegramBotCommands
   private static void bookSearch(TelegramBot bot, Update update, String searchQuery)
   {
     bot.sendBusy(update);
-    ///TODO: extract page size to AppConstants or AppProperties
     bot.sendReply(update, TelegramView.searchInProgress());
-    SendMessageList reply = FlibustaClient.getBooks(searchQuery, 10);      
+    SendMessageList reply = FlibustaClient.getBooks(searchQuery, searchPageSize);      
     bot.sendReply(update, reply);
   }
 
   private static void bookSearchNext(TelegramBot bot, Update update, int searchId, int currentPage)
   {
     bot.sendBusy(update);
-    SendMessageList reply = FlibustaClient.getBooksById(searchId, currentPage, 10);
+    SendMessageList reply = FlibustaClient.getBooksById(searchId, currentPage, searchPageSize);
     bot.sendReply(update, reply);
   }
 }

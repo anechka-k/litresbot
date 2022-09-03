@@ -1,6 +1,7 @@
 package litresbot.flibusta;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -145,10 +146,29 @@ public class FlibustaClient
     return FlibustaDownloader.download(bookInfo, format);
   }
 
+  private static BookInfo tryRestoreBook(String bookId) {
+    BookInfo book = new BookInfo();
+    book.id = bookId;
+    book.title = "";
+    book.author = "";
+    book.site = FlibustaOpdsClient.flibustaHost;
+    book.annotation = "";
+    book.links = new ArrayList<>();
+    BookFileLink bookFileLink = new BookFileLink();
+    bookFileLink.href = "/b/" + bookId + "/" + FlibustaDownloader.defaultReadFormat + ".zip";
+    bookFileLink.format = FlibustaDownloader.defaultReadFormat + ".zip";
+    book.links.add(bookFileLink);
+
+    return book;
+  }
+
   public static SendMessageList readBook(String bookId, int pageNumber)
   {
     BookInfo bookInfo = booksCache.get(bookId);
-    if(bookInfo == null) return null;
+    if(bookInfo == null) {
+      bookInfo = tryRestoreBook(bookId);
+      booksCache.put(bookId, bookInfo);
+    }
 
     return FlibustaReader.readBook(bookInfo, pageNumber);
   }

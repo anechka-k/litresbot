@@ -148,7 +148,7 @@ public class TelegramView
     return result;
   }
 
-  public static SendMessageList bookSearchResult(List<BookInfo> books, int searchId, int from, int pageSize, int found, String next)
+  public static SendMessageList bookSearchResult(List<BookInfo> books, int searchId, int from, int found, String next)
   {
     SendMessageList result = new SendMessageList(4096);
 

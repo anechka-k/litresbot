@@ -65,7 +65,7 @@ public class FlibustaClient
       nextPage = "/next " + searchId + " " + pageSize;
     }
 
-    return TelegramView.bookSearchResult(firstPageBooks, searchId, 0, pageSize, found, nextPage);
+    return TelegramView.bookSearchResult(firstPageBooks, searchId, 0, found, nextPage);
   }
 
   public static SendMessageList getBooksById(int searchId, int from, int pageSize)
@@ -86,9 +86,11 @@ public class FlibustaClient
     if (from + pageSize < found) {
       thisPageBooks = thisPageBooks.subList(from, from + pageSize);
       nextPage = "/next " + searchId + " " + (from + pageSize);
+    } else {
+      thisPageBooks = thisPageBooks.subList(from, found);
     }
 
-    return TelegramView.bookSearchResult(thisPageBooks, searchId, from, pageSize, found, nextPage);
+    return TelegramView.bookSearchResult(thisPageBooks, searchId, from, found, nextPage);
   }
   
   public static SendMessageList chooseBookAction(String bookId)

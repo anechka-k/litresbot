@@ -16,7 +16,7 @@ class TextParagraphPrinter {
     currentPage = new StringBuilder();
   }
 
-  public void printParagraph(ParagraphNode paragraph, List<String> pages) throws IOException {
+  public void printParagraph(ParagraphNode paragraph, List<String> pages, boolean fromTitle) throws IOException {
     String paragraphText = "\n" + Fb2Converter.PARAGRAPH_INDENT + paragraph.text;
     int paragraphSize = paragraphText.length();
     int currentPosition = 0;

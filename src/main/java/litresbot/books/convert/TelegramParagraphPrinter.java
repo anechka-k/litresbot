@@ -7,6 +7,7 @@ import java.util.List;
 class TelegramParagraphPrinter extends TextParagraphPrinter {
 
   int printedSize = 0;
+  int tooLongWordMaxSize = 200;
 
   // add unfinished page to the pages list
   public void flush(List<String> pages) {
@@ -18,44 +19,73 @@ class TelegramParagraphPrinter extends TextParagraphPrinter {
 
   ///TODO: think about escaping text
   ///TODO: check unsupported tags handling
-  ///TODO: try to not break words - wait for space even if size limit is reached.
-  ///      Do not wait too long - if word length is too far ahead of the size limit, break it.
 
-  public void printParagraph(ParagraphNode paragraph, List<String> pages) throws IOException {
-    String paragraphText = "\n" + Fb2Converter.PARAGRAPH_INDENT + paragraph.text;
-    int paragraphSize = paragraphText.length();
+  public void printParagraph(ParagraphNode paragraph, List<String> pages, boolean fromTitle) throws IOException {
     int currentPosition = 0;
+    int initialSpaces = 0;
+    boolean paragraphStart = true;
 
     while (true) {
       if (printedSize >= pageSize) {
         flush(pages);
       }
 
-      int paragraphSizeToWrite = paragraphSize - currentPosition;
-      if (paragraphSizeToWrite <= 0) break;
-
       int pageSizeLeft = pageSize - printedSize;
+
+      int paragraphSizeToWrite = paragraph.text.length() - currentPosition;
+      if (paragraphSizeToWrite <= 0) break;
       
       if (paragraphSizeToWrite > pageSizeLeft) {
         paragraphSizeToWrite = pageSizeLeft;
       }
 
-      String paragraphPage = paragraphText.substring(currentPosition, currentPosition + paragraphSizeToWrite);
+      // now start truncating paragraph.text
+      String truncParagraphPage = "";
+      for (int i = currentPosition; i < paragraph.text.length(); i++) {
+        char letter = paragraph.text.charAt(i);
+        if (letter == ' ') {
+          if (truncParagraphPage.isEmpty()) {
+            initialSpaces++;
+            continue;
+          }
+          if (i > currentPosition + paragraphSizeToWrite + initialSpaces) {
+            break;
+          }
+        }
+        truncParagraphPage += letter;
+        if (i > currentPosition + paragraphSizeToWrite + tooLongWordMaxSize + initialSpaces) {
+          break;
+        }
+      }
+
       List<TagPosition> shiftedTags = new ArrayList<>();
-      int shiftRight = ("\n" + Fb2Converter.PARAGRAPH_INDENT).length();
+
       for (TagPosition t : paragraph.tags) {
-        if ((t.from + shiftRight) < currentPosition) continue;
+        if (t.from < (currentPosition + initialSpaces)) continue;
         TagPosition newTag = new TagPosition();
-        newTag.from = t.from + shiftRight - currentPosition;
-        newTag.to = t.to + shiftRight - currentPosition;
+        newTag.from = t.from - currentPosition - initialSpaces;
+        newTag.to = t.to - currentPosition - initialSpaces;
         newTag.type = t.type;
         shiftedTags.add(newTag);
       }
-      String withTags = TagsInserter.insertTags(paragraphPage, shiftedTags);
+      String withTags = TagsInserter.insertTags(truncParagraphPage, shiftedTags);
+
+      if (paragraphStart) {
+        withTags = "\n" + Fb2Converter.PARAGRAPH_INDENT + withTags;
+        paragraphStart = false;
+      }
+
+      if (fromTitle) {
+        if (!pages.isEmpty()) {
+          withTags = "\n" + withTags;
+        }
+        withTags = "<b>" + withTags + "</b>\n";
+      }
 
       currentPage.append(withTags);
-      currentPosition += paragraphSizeToWrite;
-      printedSize += paragraphSizeToWrite;
+
+      printedSize += truncParagraphPage.length();
+      currentPosition += (truncParagraphPage.length() + initialSpaces);
     }
   }
 }

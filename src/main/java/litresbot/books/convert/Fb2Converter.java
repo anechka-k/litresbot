@@ -78,98 +78,96 @@ public class Fb2Converter
         NodeListIterator titleChildrenIterator = new NodeListIterator(c);
         for (Node t : titleChildrenIterator.getIterable()) {
           if (t.getNodeName() != "p") continue;
-          printParagraphTree(t, printer, pages);
+          printParagraphTree(t, printer, pages, true);
         }
         continue;
       }
       if (c.getNodeName() == "p") {
-        printParagraphTree(c, printer, pages);
+        printParagraphTree(c, printer, pages, false);
       }
     }
   }
 
-  private static void printParagraphTree(Node node, TextParagraphPrinter printer, List<String> pages) throws IOException {
+  private static void printParagraphTree(Node node, TextParagraphPrinter printer, List<String> pages, boolean fromTitle) throws IOException {
     Stack<ParagraphNode> stk = new Stack<ParagraphNode>();
     ParagraphNode topParagraph = new ParagraphNode();
     topParagraph.node = node;
     topParagraph.text = node.getTextContent();
     stk.push(topParagraph);
   
-    while (!stk.empty()) {
+    while (!stk.isEmpty()) {
       ParagraphNode top = stk.pop();
 
-      if (top.node != null) {
-        NodeListIterator paragraphsIterator = new NodeListIterator(top.node);
-        List<ParagraphNode> children = new ArrayList<ParagraphNode>();
-        ParagraphNode currentParagraph = null;
-
-        for (Node p : paragraphsIterator.getIterable()) {
-          if (p.getNodeName() == "p") {
-            if (currentParagraph != null) {
-              children.add(currentParagraph);
-              currentParagraph = null;
-            }
-
-            ParagraphNode childParagraph = new ParagraphNode();
-            childParagraph.node = p;
-            childParagraph.text = p.getTextContent();
-            children.add(childParagraph);
-            continue;
-          }
-
-          if (currentParagraph == null) {
-            currentParagraph = new ParagraphNode();
-            currentParagraph.text = "";
-          }
-          if (p.getNodeName() == "strong") {
-            TagPosition tag = new TagPosition();
-            tag.from = currentParagraph.text.length();
-            tag.to = currentParagraph.text.length() + p.getTextContent().length();
-            tag.type = TagType.BOLD;
-            currentParagraph.tags.add(tag);
-            currentParagraph.text += p.getTextContent();
-            continue;
-          }
-          if (p.getNodeName() == "emphasis") {
-            TagPosition tag = new TagPosition();
-            tag.from = currentParagraph.text.length();
-            tag.to = currentParagraph.text.length() + p.getTextContent().length();
-            tag.type = TagType.ITALIC;
-            currentParagraph.tags.add(tag);
-            currentParagraph.text += p.getTextContent();
-            continue;
-          }
-          if (p.getNodeName() == "strikethrough") {
-            TagPosition tag = new TagPosition();
-            tag.from = currentParagraph.text.length();
-            tag.to = currentParagraph.text.length() + p.getTextContent().length();
-            tag.type = TagType.STRIKE;
-            currentParagraph.tags.add(tag);
-            currentParagraph.text += p.getTextContent();
-            continue;
-          }
-          if (p.getNodeName() == "subtitle") {
-            currentParagraph.text += p.getTextContent();
-            continue;
-          }
-          currentParagraph.text += p.getTextContent();
-        }
-
-        if (currentParagraph != null) {
-          children.add(currentParagraph);
-        }
-
-        ListIterator<ParagraphNode> iterator = children.listIterator(children.size());
-        while (iterator.hasPrevious()) {
-          ParagraphNode p = iterator.previous();
-          stk.push(p);
-        }
-
-        // take first paragraph again
-        top = stk.pop();
+      if (top.node == null) {
+        printer.printParagraph(top, pages, fromTitle);
+        continue;
       }
 
-      printer.printParagraph(top, pages);
+      NodeListIterator paragraphsIterator = new NodeListIterator(top.node);
+      List<ParagraphNode> children = new ArrayList<ParagraphNode>();
+      ParagraphNode currentParagraph = null;
+
+      for (Node p : paragraphsIterator.getIterable()) {
+        if (p.getNodeName() == "p") {
+          if (currentParagraph != null) {
+            children.add(currentParagraph);
+            currentParagraph = null;
+          }
+
+          ParagraphNode childParagraph = new ParagraphNode();
+          childParagraph.node = p;
+          childParagraph.text = p.getTextContent();
+          children.add(childParagraph);
+          continue;
+        }
+
+        if (currentParagraph == null) {
+          currentParagraph = new ParagraphNode();
+          currentParagraph.text = "";
+        }
+        if (p.getNodeName() == "strong") {
+          TagPosition tag = new TagPosition();
+          tag.from = currentParagraph.text.length();
+          tag.to = currentParagraph.text.length() + p.getTextContent().length();
+          tag.type = TagType.BOLD;
+          currentParagraph.tags.add(tag);
+          currentParagraph.text += p.getTextContent();
+          continue;
+        }
+        if (p.getNodeName() == "emphasis") {
+          TagPosition tag = new TagPosition();
+          tag.from = currentParagraph.text.length();
+          tag.to = currentParagraph.text.length() + p.getTextContent().length();
+          tag.type = TagType.ITALIC;
+          currentParagraph.tags.add(tag);
+          currentParagraph.text += p.getTextContent();
+          continue;
+        }
+        if (p.getNodeName() == "strikethrough") {
+          TagPosition tag = new TagPosition();
+          tag.from = currentParagraph.text.length();
+          tag.to = currentParagraph.text.length() + p.getTextContent().length();
+          tag.type = TagType.STRIKE;
+          currentParagraph.tags.add(tag);
+          currentParagraph.text += p.getTextContent();
+          continue;
+        }
+        if (p.getNodeName() == "subtitle") {
+          currentParagraph.text += p.getTextContent();
+          continue;
+        }
+        currentParagraph.text += p.getTextContent();
+      }
+
+      if (currentParagraph != null) {
+        children.add(currentParagraph);
+      }
+
+      ListIterator<ParagraphNode> iterator = children.listIterator(children.size());
+      while (iterator.hasPrevious()) {
+        ParagraphNode p = iterator.previous();
+        stk.push(p);
+      }
     }
   }
 }
